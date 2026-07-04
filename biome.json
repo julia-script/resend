@@ -20,6 +20,12 @@
       "recommended": true,
       "suspicious": {
         "noUnknownAtRules": "off"
+      },
+      "complexity": {
+        "noExtraBooleanCast": "off"
+      },
+      "correctness": {
+        "useYield": "off"
       }
     },
     "domains": {
