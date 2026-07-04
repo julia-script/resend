@@ -12,15 +12,18 @@ import {
 } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/postgres-js";
 // import postgres from "postgres";
-import { Redacted } from "effect";
 import type { AdapterAccountType } from "next-auth/adapters";
 import { env } from "@/lib/env";
+import {
+  domainStatusReasonValues,
+  domainStatusValues,
+} from "./validationschemas";
 
 // import { env } from "@/lib/env";
 
 // const pool = postgres(Redacted.value(env.databaseUrl), { max: 1 });
 
-const dbUrl = Redacted.value(env.databaseUrl);
+const dbUrl = env.databaseUrl;
 export const db = drizzle(dbUrl);
 
 export const users = pgTable("user", {
@@ -83,18 +86,12 @@ export const verificationTokens = pgTable(
   ],
 );
 
-export const domainStatus = pgEnum("domain_status", [
-  "not_started",
-  "pending",
-  "verified",
-  "failed",
-  "temporary_failure",
-]);
+export const domainStatus = pgEnum("domain_status", domainStatusValues);
 
-export const domainStatusReason = pgEnum("domain_status_reason", [
-  "window_expired",
-  "revoked_after_grace",
-]);
+export const domainStatusReason = pgEnum(
+  "domain_status_reason",
+  domainStatusReasonValues,
+);
 
 export const checkTrigger = pgEnum("check_trigger", [
   "cron",

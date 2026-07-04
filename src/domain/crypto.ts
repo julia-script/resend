@@ -4,65 +4,33 @@ import {
   generateKeyPair as generateKeyPairCrypto,
   randomBytes,
 } from "node:crypto";
-import { Schema } from "effect";
-import * as Effect from "effect/Effect";
-import * as Result from "effect/Result";
+import { promisify } from "node:util";
+import { ApiError } from "@/lib/api/helpers";
 
-export class CryptoError extends Schema.TaggedErrorClass<CryptoError>()(
-  "CryptoError",
-  {
-    message: Schema.String,
-    cause: Schema.Unknown,
-  },
-) {
-  static fromError(message: string, cause?: unknown) {
-    return CryptoError.make({ message, cause });
-  }
-}
-export const generateRsaKeyPair = Effect.callback<
-  Result.Result<{ publicKey: Uint8Array; privateKey: string }, CryptoError>,
-  never,
-  never
->((resume) => {
-  generateKeyPairCrypto(
-    "rsa",
-    {
-      modulusLength: DKIM_MODULUS_LENGTH,
-      publicKeyEncoding: { type: "spki", format: "der" },
-      privateKeyEncoding: { type: "pkcs8", format: "pem" },
-    },
-    (err, publicKey, privateKey) => {
-      if (err) {
-        resume(
-          Effect.succeed(
-            Result.fail(
-              CryptoError.fromError("Could not generate RSA key pair", err),
-            ),
-          ),
-        );
-      } else {
-        resume(Effect.succeed(Result.succeed({ publicKey, privateKey })));
-      }
-    },
-  );
-}).pipe(Effect.flatMap(Effect.fromResult));
+export const generateRsaKeyPair = promisify(generateKeyPairCrypto);
 
 const DKIM_MODULUS_LENGTH = 1024;
 
 const IV_BYTES = 12;
 
-const keyFromHex = (encryptionKeyHex: string): Buffer => {
-  const key = Buffer.from(encryptionKeyHex, "hex");
+const parseHex = (hex: string) => {
+  return Uint8Array.from(Buffer.from(hex, "hex"));
+};
+const keyFromHex = (encryptionKeyHex: string): Uint8Array => {
+  const key = parseHex(encryptionKeyHex.replace(/-/g, ""));
   if (key.length !== 32) {
-    throw CryptoError.fromError("Invalid encryption key");
+    throw new ApiError({
+      code: "crypto/invalid_encryption_key",
+      message: "Invalid encryption key",
+    });
   }
   return key;
 };
 
-export const encryptPrivateKey = Effect.fnUntraced(function* (
+export const encryptPrivateKey = (
   privateKeyPem: string,
   encryptionKeyHex: string,
-) {
+) => {
   const iv = randomBytes(IV_BYTES);
   const cipher = createCipheriv(
     "aes-256-gcm",
@@ -76,17 +44,20 @@ export const encryptPrivateKey = Effect.fnUntraced(function* (
   return [iv, cipher.getAuthTag(), ciphertext]
     .map((part) => part.toString("base64"))
     .join(":");
-});
+};
 
-export const decryptPrivateKey = Effect.fnUntraced(function* (
+export const decryptPrivateKey = (
   payload: string,
   encryptionKeyHex: string,
-) {
+) => {
   const [iv, authTag, ciphertext] = payload
     .split(":")
     .map((part) => Buffer.from(part, "base64"));
   if (!iv || !authTag || !ciphertext) {
-    return yield* Effect.fail(CryptoError.fromError("Malformed payload"));
+    throw new ApiError({
+      code: "crypto/malformed_payload",
+      message: "Malformed payload",
+    });
   }
   const decipher = createDecipheriv(
     "aes-256-gcm",
@@ -98,4 +69,4 @@ export const decryptPrivateKey = Effect.fnUntraced(function* (
     decipher.update(ciphertext),
     decipher.final(),
   ]).toString("utf8");
-});
+};

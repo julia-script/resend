@@ -1,4 +1,6 @@
+import { Domains } from "@/components/Domains";
 import { auth } from "@/lib/auth/handlers";
+
 
 export default async function Home() {
   const session = await auth();
@@ -29,6 +31,7 @@ export default async function Home() {
             <code className="font-mono text-xs">/api/reference</code>.
           </p>
         </div>
+        <Domains />
       </div>
     </main>
   );
