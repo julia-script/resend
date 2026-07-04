@@ -1,7 +1,6 @@
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import NextAuth, { type DefaultSession } from "next-auth";
 import Resend from "next-auth/providers/resend";
-import { db } from "@/db/schema";
+import { DrizzleAdapter } from "./drizzleadapter";
 
 declare module "next-auth" {
   interface Session {
@@ -19,7 +18,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/signin",
     verifyRequest: "/signin",
   },
-  adapter: DrizzleAdapter(db),
+  adapter: DrizzleAdapter,
   callbacks: {
     session({ session, user }) {
       session.user.id = user.id;

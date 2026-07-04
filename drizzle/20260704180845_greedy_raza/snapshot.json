@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "262969ee-144f-43c9-b183-4d1efa01fb10",
+  "id": "7903c921-6789-44f2-a3a3-1c9e1261295c",
   "prevIds": ["00000000-0000-0000-0000-000000000000"],
   "ddl": [
     {
@@ -123,7 +123,7 @@
       "table": "account"
     },
     {
-      "type": "text",
+      "type": "uuid",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,

@@ -6,7 +6,7 @@ CREATE TABLE "account" (
 	"userId" uuid NOT NULL,
 	"type" text NOT NULL,
 	"provider" text NOT NULL,
-	"providerAccountId" text NOT NULL,
+	"providerAccountId" uuid NOT NULL,
 	"refresh_token" text,
 	"access_token" text,
 	"expires_at" integer,
