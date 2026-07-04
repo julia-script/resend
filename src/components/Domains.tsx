@@ -2,40 +2,12 @@
 
 import { useSession } from "@/hooks/session";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
-import { up } from "up-fetch";
 import { z } from "zod";
-import { type PartialDomain, PartialDomainSchema } from "@/db/validationschemas";
-
-const api = up(fetch, () => ({
-  headers: { "Content-Type": "application/json" },
-  credentials: "same-origin",
-}));
-
-const statusStyles: Record<
-  PartialDomain["status"],
-  { label: string; className: string }
-> = {
-  not_started: { label: "Not started", className: "bg-border text-muted" },
-  pending: { label: "Pending", className: "bg-accent text-accent-foreground" },
-  verified: { label: "Verified", className: "bg-mint text-mint-foreground" },
-  failed: { label: "Failed", className: "bg-peach text-peach-foreground" },
-  temporary_failure: {
-    label: "Temporary failure",
-    className: "bg-peach text-peach-foreground",
-  },
-};
-
-const StatusBadge = ({ status }: { status: PartialDomain["status"] }) => {
-  const { label, className } = statusStyles[status];
-  return (
-    <span
-      className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${className}`}
-    >
-      {label}
-    </span>
-  );
-};
+import { api } from "@/lib/api/client";
+import { PartialDomainSchema } from "@/db/validationschemas";
+import { StatusBadge } from "./StatusBadge";
 
 const CreateDomain = () => {
   const [name, setName] = useState("");
@@ -125,22 +97,29 @@ export const Domains = () => {
         {domains && domains.length > 0 && (
           <ul className="divide-y divide-border">
             {domains.map((domain) => (
-              <li
-                key={domain.id}
-                className="flex items-center justify-between gap-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{domain.name}</p>
-                  <p className="mt-0.5 truncate font-mono text-xs text-muted">
-                    {domain.selector}._domainkey.{domain.name}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  <span className="hidden text-xs text-muted sm:inline">
-                    {domain.createdAt.toLocaleDateString()}
-                  </span>
-                  <StatusBadge status={domain.status} />
-                </div>
+              <li key={domain.id}>
+                <Link
+                  href={`/domains/${domain.id}`}
+                  className="-mx-2 flex items-center justify-between gap-4 rounded-md px-2 py-3 transition-colors hover:bg-background"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {domain.name}
+                    </p>
+                    <p className="mt-0.5 truncate font-mono text-xs text-muted">
+                      {domain.selector}._domainkey.{domain.name}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="hidden text-xs text-muted sm:inline">
+                      {domain.createdAt.toLocaleDateString()}
+                    </span>
+                    <StatusBadge status={domain.status} />
+                    <span aria-hidden className="text-muted">
+                      ›
+                    </span>
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>

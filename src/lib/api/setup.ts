@@ -5,6 +5,7 @@ import type { Session } from "next-auth";
 import { auth } from "../auth/handlers";
 import { listDomainsHandler, listDomainsRoute } from "./domains/list";
 import { createDomainHandler, createDomainRoute } from "./domains/create";
+import { getDomainHandler, getDomainRoute } from "./domains/get";
 
 export type Env = {
   Variables: {
@@ -78,6 +79,8 @@ app.get(
 );
 
 app.use("/domains", requireSession);
+app.use("/domains/*", requireSession);
 
 app.openapi(listDomainsRoute, listDomainsHandler);
 app.openapi(createDomainRoute, createDomainHandler);
+app.openapi(getDomainRoute, getDomainHandler);

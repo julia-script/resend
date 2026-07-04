@@ -54,6 +54,25 @@ export const getDomainsByUserId = async (
   }
 };
 
+export const getDomainById = async (
+  id: string,
+): Promise<PartialDomain | null> => {
+  try {
+    const result = await db
+      .select(partialDomainTable)
+      .from(domains)
+      .where(eq(domains.id, id))
+      .execute();
+    return result[0] || null;
+  } catch (error) {
+    throw new ApiError({
+      code: "db/get_domain_by_id_failed",
+      message: "Failed to get domain by id",
+      cause: error,
+    });
+  }
+};
+
 export const getDomainByName = async (name: string): Promise<PartialDomain | null> => {
   try {
   const result = await db
