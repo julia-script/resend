@@ -33,6 +33,12 @@ export const createDomainRoute = createRoute({
         },
       },
     },
+    400: {
+      description: "The name is not a registrable domain",
+      content: {
+        "application/json": { schema: ApiErrorSchema },
+      },
+    },
     409: {
       description:
         "The name is verified by another account; retry with enforce: true to claim it",

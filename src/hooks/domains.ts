@@ -84,6 +84,10 @@ export const useCreateDomain = () => {
 export const isNameTakenError = (error: unknown): boolean =>
   isResponseError(error) && error.data?.code === "domains/name_taken";
 
+/** The server's human-readable message, when the response body carried one. */
+export const apiErrorMessage = (error: unknown): string | undefined =>
+  isResponseError(error) ? error.data?.message : undefined;
+
 export const useDeleteDomain = (id: string) => {
   const queryClient = useQueryClient();
   return useMutation({

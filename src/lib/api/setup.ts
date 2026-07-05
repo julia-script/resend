@@ -59,6 +59,10 @@ export const app = new OpenAPIHono<Env>({
 // Domain and db failures throw ApiError; one hook maps them all to JSON.
 app.onError((err, c) => {
   if (err instanceof ApiError) {
+    // Bad input is the caller's error, not ours.
+    if (err.isTagged("dkim/invalid_domain")) {
+      return c.json(err.toJson(), 400);
+    }
     console.error("api error", err.code, err.cause ?? "");
     return c.json(err.toJson(), 500);
   }

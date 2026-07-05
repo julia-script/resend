@@ -39,6 +39,17 @@ test("missing record fails with record_not_found", async () => {
   });
 });
 
+// Garbage input must throw the tagged ApiError (mapped to 400), never a
+// raw TypeError from the URL constructor (which surfaced as a 500).
+test.each(["not a domain", "asdf", "example.com/path", "  ", "a:b@c"])(
+  "normalizeDomainName rejects %j",
+  (input) => {
+    expect(() => normalizeDomainName(input)).toThrow(
+      expect.objectContaining({ code: "dkim/invalid_domain" }),
+    );
+  },
+);
+
 // IDN names must reach DNS in punycode — the form DNS actually resolves.
 test("normalizes unicode domains to punycode", () => {
   expect(normalizeDomainName("münchen.de")).toBe("xn--mnchen-3ya.de");

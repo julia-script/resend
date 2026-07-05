@@ -127,25 +127,29 @@ export const checkDkim = async (options: {
 };
 
 export const normalizeDomainName = (name: string) => {
-  const trimmed = name.trim().toLowerCase().replace(/\.$/, "");
-  if (trimmed === "") {
-    throw new ApiError({
+  const invalid = () =>
+    new ApiError({
       code: "dkim/invalid_domain",
-      message: "Invalid domain",
+      message: "That doesn’t look like a domain name.",
     });
+  const trimmed = name.trim().toLowerCase().replace(/\.$/, "");
+  if (trimmed === "") throw invalid();
+  let url: URL;
+  try {
+    url = new URL(`http://${trimmed}`);
+  } catch {
+    // URL constructor rejects garbage ("not a domain") with a TypeError.
+    throw invalid();
   }
-  const url = new URL(`http://${trimmed}`);
   const isBareHostname =
     url.pathname === "/" &&
     url.port === "" &&
     url.search === "" &&
     url.hash === "" &&
     url.username === "";
-  if (!isBareHostname) {
-    throw new ApiError({
-      code: "dkim/invalid_domain",
-      message: "Invalid domain",
-    });
-  }
+  if (!isBareHostname) throw invalid();
+  // Unregistrable names ("asdf", "localhost") could never verify — reject
+  // here instead of creating a domain that fails every check.
+  if (!isDomainValid(url.hostname)) throw invalid();
   return url.hostname;
 };

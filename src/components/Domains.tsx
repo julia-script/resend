@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { isNameTakenError, useCreateDomain, useDomains } from "@/hooks/domains";
+import {
+  apiErrorMessage,
+  isNameTakenError,
+  useCreateDomain,
+  useDomains,
+} from "@/hooks/domains";
 import { strings } from "@/lib/strings";
 import { StatusBadge } from "./StatusBadge";
 
@@ -73,9 +78,7 @@ const CreateDomain = () => {
       ) : (
         mutation.isError && (
           <p className="mt-2 text-xs text-peach-foreground">
-            {mutation.error instanceof Error
-              ? mutation.error.message
-              : strings.domainList.genericError}
+            {apiErrorMessage(mutation.error) ?? strings.domainList.genericError}
           </p>
         )
       )}
