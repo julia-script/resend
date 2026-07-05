@@ -1,5 +1,6 @@
 import { createRoute, type RouteHandler, z } from "@hono/zod-openapi";
 import { getDomainsDueForCheck } from "@/db/domains";
+import { dispatchNotifications } from "@/domain/notifications";
 import { verifyDomain } from "@/domain/verification";
 import { env } from "@/lib/env";
 import { ApiError } from "../helpers";
@@ -41,6 +42,10 @@ export const cronVerifyHandler: RouteHandler<
 
   const domains = await getDomainsDueForCheck();
   const now = new Date();
-  await Promise.all(domains.map((domain) => verifyDomain(domain, now)));
+  const results = await Promise.all(
+    domains.map((domain) => verifyDomain(domain, now)),
+  );
+  // One batched send for the whole sweep (Resend rate-limits individual sends).
+  await dispatchNotifications(results.flatMap((r) => r.notifications));
   return c.json({ ok: true, checked: domains.length }, 200);
 };

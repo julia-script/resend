@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, lte } from "drizzle-orm";
+import { and, asc, eq, inArray, lte, ne } from "drizzle-orm";
 import { encryptPrivateKey } from "@/domain/crypto";
 import { env } from "@/lib/env";
 import { db, domains, domainStatus, domainStatusReason } from "./schema";
@@ -117,6 +117,33 @@ export const getDomainsDueForCheck = async (
     throw new ApiError({
       code: "db/get_domains_due_for_check_failed",
       message: "Failed to get domains due for check",
+      cause: error,
+    });
+  }
+};
+
+/** Verified domains with the same name owned by anyone else (for supersede). */
+export const getVerifiedDomainsByName = async (
+  name: string,
+  excludeId: string,
+): Promise<PartialDomain[]> => {
+  try {
+    const result = await db
+      .select(partialDomainTable)
+      .from(domains)
+      .where(
+        and(
+          eq(domains.name, name),
+          eq(domains.status, "verified"),
+          ne(domains.id, excludeId),
+        ),
+      )
+      .execute();
+    return result || [];
+  } catch (error) {
+    throw new ApiError({
+      code: "db/get_verified_domains_by_name_failed",
+      message: "Failed to get verified domains by name",
       cause: error,
     });
   }

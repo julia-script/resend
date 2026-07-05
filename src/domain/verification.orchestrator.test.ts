@@ -6,12 +6,13 @@ vi.mock("@/db/domains", () => ({
     id,
     ...updates,
   })),
+  getVerifiedDomainsByName: vi.fn(async () => []),
 }));
 vi.mock("./dkim", () => ({
   checkDkim: vi.fn(),
 }));
 
-import { updateDomain } from "@/db/domains";
+import { getVerifiedDomainsByName, updateDomain } from "@/db/domains";
 import { checkDkim } from "./dkim";
 import { verifyDomain } from "./verification";
 
@@ -39,11 +40,12 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-test("null transition (failed domain) → no DB write, returns domain as-is", async () => {
+test("null transition (failed domain) → no DB write, no notifications", async () => {
   vi.mocked(checkDkim).mockResolvedValue({ type: "success", value: "rec" });
   const result = await verifyDomain({ ...domain, status: "failed" }, NOW);
   expect(updateDomain).not.toHaveBeenCalled();
-  expect(result).toMatchObject({ id: "d1", status: "failed" });
+  expect(result.domain).toMatchObject({ id: "d1", status: "failed" });
+  expect(result.notifications).toEqual([]);
 });
 
 test("appends the new entry to the existing checkLog", async () => {
@@ -71,6 +73,56 @@ test("caps checkLog at 100 entries, dropping the oldest", async () => {
     status: "ok",
     checkedAt: NOW.getTime(),
   });
+});
+
+test("returns the transition's events as notifications", async () => {
+  vi.mocked(checkDkim).mockResolvedValue({ type: "success", value: "rec" });
+  const result = await verifyDomain(domain, NOW);
+  expect(result.notifications).toEqual([
+    { event: "notifyVerificationSucceeded", domain },
+  ]);
+});
+
+test("fresh verification revokes another owner's verified copy and queues their notification", async () => {
+  vi.mocked(checkDkim).mockResolvedValue({ type: "success", value: "rec" });
+  const previousOwner = {
+    ...domain,
+    id: "d2",
+    userId: "u2",
+    status: "verified" as const,
+    checkLog: [],
+  };
+  vi.mocked(getVerifiedDomainsByName).mockResolvedValueOnce([previousOwner]);
+
+  const result = await verifyDomain(domain, NOW);
+
+  expect(getVerifiedDomainsByName).toHaveBeenCalledWith("example.com", "d1");
+  expect(updateDomain).toHaveBeenCalledWith("d2", {
+    status: "failed",
+    statusReason: "superseded",
+    verifiedAt: null,
+    nextCheckAt: null,
+    deadlineAt: null,
+    gracePeriodStartedAt: null,
+    gracePeriodWarningSentAt: null,
+    checkLog: [
+      { status: "revoked", reason: "superseded", checkedAt: NOW.getTime() },
+    ],
+  });
+  expect(result.notifications).toContainEqual({
+    event: "notifyDomainSuperseded",
+    domain: previousOwner,
+  });
+});
+
+test("verified→verified recheck does not run the supersede sweep", async () => {
+  vi.mocked(checkDkim).mockResolvedValue({ type: "success", value: "rec" });
+  const result = await verifyDomain(
+    { ...domain, status: "verified", verifiedAt: NOW },
+    NOW,
+  );
+  expect(getVerifiedDomainsByName).not.toHaveBeenCalled();
+  expect(result.notifications).toEqual([]);
 });
 
 test("passes the domain's own selector/name/key to the DKIM check", async () => {

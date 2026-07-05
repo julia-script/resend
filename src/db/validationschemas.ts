@@ -15,7 +15,7 @@ export const domainStatusValues = [
 export const domainStatusReasonValues = [
   "expired",
   "canceled",
-  "superceded",
+  "superseded",
   "grace_period_expired",
   // "key_mismatch",
   // "record_not_found",
@@ -47,7 +47,7 @@ export const CheckLogEntrySchema = z.union([
   z.object({
     status: z.literal("revoked"),
     reason: z.union([
-      z.literal("superceded"),
+      z.literal("superseded"),
       z.literal("grace_period_expired"),
       z.literal("user_canceled"),
     ]),

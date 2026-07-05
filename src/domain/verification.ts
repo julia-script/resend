@@ -1,11 +1,13 @@
 import {
   type DomainUpdate,
+  getVerifiedDomainsByName,
   updateDomain,
 } from "@/db/domains";
 import type { CheckLogEntry, PartialDomain } from "@/db/validationschemas";
 import type { ApiError } from "@/lib/api/helpers";
 import * as Dkim from "./dkim";
 import type { CheckDkimResult } from "./dkim";
+import type { Notification } from "./notifications";
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 const MINUTE_IN_MS = 1000 * 60;
@@ -35,7 +37,8 @@ export type VerificationEvent =
   | "notifyVerificationFailed"
   | "notifyGracePeriodExpired"
   | "notifyGracePeriodWarning"
-  | "notifyGracePeriodStarted";
+  | "notifyGracePeriodStarted"
+  | "notifyDomainSuperseded";
 export type Transition = {
   update: RequiredBy<DomainUpdate, "checkLog">;
   events?: VerificationEvent[];
@@ -183,7 +186,48 @@ export const transition = (
   return null;
 };
 
-export const verifyDomain = async (domain: PartialDomain, now: Date) => {
+const appendLog = (existing: CheckLogEntry[] | null, added: CheckLogEntry[]) =>
+  [...(existing ?? []), ...added].slice(-CHECK_LOG_MAX_ENTRIES);
+
+/**
+ * A domain just got verified: any other account's verified copy of the same
+ * name loses it. Revokes them and returns the notifications to send.
+ */
+const supersedeOthers = async (
+  domain: PartialDomain,
+  now: Date,
+): Promise<Notification[]> => {
+  const others = await getVerifiedDomainsByName(domain.name, domain.id);
+  await Promise.all(
+    others.map((other) =>
+      updateDomain(other.id, {
+        status: "failed",
+        statusReason: "superseded",
+        verifiedAt: null,
+        nextCheckAt: null,
+        deadlineAt: null,
+        gracePeriodStartedAt: null,
+        gracePeriodWarningSentAt: null,
+        checkLog: appendLog(other.checkLog, [
+          { status: "revoked", reason: "superseded", checkedAt: now.getTime() },
+        ]),
+      }),
+    ),
+  );
+  return others.map((other) => ({
+    event: "notifyDomainSuperseded",
+    domain: other,
+  }));
+};
+
+/**
+ * Runs one check and persists the transition. Sends nothing: the resulting
+ * notifications are returned so callers can batch them across domains.
+ */
+export const verifyDomain = async (
+  domain: PartialDomain,
+  now: Date,
+): Promise<{ domain: PartialDomain; notifications: Notification[] }> => {
   const check = await Dkim.checkDkim({
     selector: domain.selector,
     domain: domain.name,
@@ -191,15 +235,20 @@ export const verifyDomain = async (domain: PartialDomain, now: Date) => {
   });
 
   const result = transition(domain, check, now);
-  if (!result) return domain;
+  if (!result) return { domain, notifications: [] };
 
-  const checkLog = [...(domain.checkLog ?? []), ...result.update.checkLog].slice(
-    -CHECK_LOG_MAX_ENTRIES,
-  );
   const updated = await updateDomain(domain.id, {
     ...result.update,
-    checkLog,
+    checkLog: appendLog(domain.checkLog, result.update.checkLog),
   });
-  // TODO: dispatch result.events (email notifications).
-  return updated ?? domain;
+
+  const notifications: Notification[] = (result.events ?? []).map((event) => ({
+    event,
+    domain,
+  }));
+  // A fresh verification takes the name over from any previous owner.
+  if (result.events?.includes("notifyVerificationSucceeded")) {
+    notifications.push(...(await supersedeOthers(domain, now)));
+  }
+  return { domain: updated ?? domain, notifications };
 };
