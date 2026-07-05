@@ -76,20 +76,38 @@ export const getDomainById = async (
   }
 };
 
-export const getDomainByName = async (
+/** All rows for a name, across users — the same name can be claimed by many. */
+export const getDomainsByName = async (
   name: string,
-): Promise<PartialDomain | null> => {
+): Promise<PartialDomain[]> => {
   try {
     const result = await db
       .select(partialDomainTable)
       .from(domains)
       .where(eq(domains.name, name))
       .execute();
-    return result[0] || null;
+    return result || [];
   } catch (error) {
     throw new ApiError({
-      code: "db/get_domain_by_name_failed",
-      message: "Failed to get domain by name",
+      code: "db/get_domains_by_name_failed",
+      message: "Failed to get domains by name",
+      cause: error,
+    });
+  }
+};
+
+export const deleteDomain = async (id: string): Promise<boolean> => {
+  try {
+    const result = await db
+      .delete(domains)
+      .where(eq(domains.id, id))
+      .returning({ id: domains.id })
+      .execute();
+    return result.length > 0;
+  } catch (error) {
+    throw new ApiError({
+      code: "db/delete_domain_failed",
+      message: "Failed to delete domain",
       cause: error,
     });
   }

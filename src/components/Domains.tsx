@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useCreateDomain, useDomains } from "@/hooks/domains";
+import { isNameTakenError, useCreateDomain, useDomains } from "@/hooks/domains";
+import { strings } from "@/lib/strings";
 import { StatusBadge } from "./StatusBadge";
 
 const CreateDomain = () => {
   const [name, setName] = useState("");
   const mutation = useCreateDomain();
+  // The exact name the 409 was for, so confirming claims what was submitted.
+  const takenName = isNameTakenError(mutation.error)
+    ? mutation.variables?.name
+    : undefined;
   return (
     <div>
       <form
@@ -25,7 +30,7 @@ const CreateDomain = () => {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="example.com"
+          placeholder={strings.domainList.placeholder}
           className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none placeholder:text-muted/60 focus:border-accent-foreground/40"
         />
         <button
@@ -33,15 +38,36 @@ const CreateDomain = () => {
           disabled={mutation.isPending || !name.trim()}
           className="shrink-0 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-80 disabled:opacity-50"
         >
-          {mutation.isPending ? "Adding…" : "Add domain"}
+          {mutation.isPending ? strings.domainList.adding : strings.domainList.add}
         </button>
       </form>
-      {mutation.isError && (
-        <p className="mt-2 text-xs text-peach-foreground">
-          {mutation.error instanceof Error
-            ? mutation.error.message
-            : "Something went wrong."}
-        </p>
+      {takenName ? (
+        <div className="mt-2 rounded-md bg-peach px-3 py-2 text-xs text-peach-foreground">
+          <p>
+            <strong>{takenName}</strong> {strings.domainList.claimWarning}
+          </p>
+          <button
+            type="button"
+            disabled={mutation.isPending}
+            onClick={() =>
+              mutation.mutate(
+                { name: takenName, enforce: true },
+                { onSuccess: () => setName("") },
+              )
+            }
+            className="mt-2 rounded-md bg-peach-foreground px-2 py-1 font-medium text-peach transition-opacity hover:opacity-80 disabled:opacity-50"
+          >
+            {mutation.isPending ? strings.domainList.claiming : strings.domainList.claim}
+          </button>
+        </div>
+      ) : (
+        mutation.isError && (
+          <p className="mt-2 text-xs text-peach-foreground">
+            {mutation.error instanceof Error
+              ? mutation.error.message
+              : strings.domainList.genericError}
+          </p>
+        )
       )}
     </div>
   );
@@ -54,10 +80,10 @@ export const Domains = () => {
   return (
     <div className="rounded-xl border border-border bg-surface p-5 shadow-soft sm:col-span-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Your domains</h2>
+        <h2 className="text-sm font-semibold">{strings.domainList.title}</h2>
         {domains && (
           <span className="text-xs text-muted">
-            {domains.length} {domains.length === 1 ? "domain" : "domains"}
+            {strings.domainList.count(domains.length)}
           </span>
         )}
       </div>
@@ -65,15 +91,15 @@ export const Domains = () => {
         <CreateDomain />
       </div>
       <div className="mt-4">
-        {isPending && <p className="text-sm text-muted">Loading domains…</p>}
+        {isPending && <p className="text-sm text-muted">{strings.domainList.loading}</p>}
         {error && (
           <p className="text-sm text-peach-foreground">
-            Couldn’t load domains. Try refreshing.
+            {strings.domainList.loadError}
           </p>
         )}
         {domains?.length === 0 && (
           <p className="text-sm text-muted">
-            No domains yet. Add one above to start sending.
+            {strings.domainList.empty}
           </p>
         )}
         {domains && domains.length > 0 && (

@@ -7,6 +7,7 @@ import { listDomainsHandler, listDomainsRoute } from "./domains/list";
 import { createDomainHandler, createDomainRoute } from "./domains/create";
 import { getDomainHandler, getDomainRoute } from "./domains/get";
 import { verifyDomainHandler, verifyDomainRoute } from "./domains/verify";
+import { deleteDomainHandler, deleteDomainRoute } from "./domains/delete";
 import { cronVerifyHandler, cronVerifyRoute } from "./cron/verify";
 
 export type Env = {
@@ -87,4 +88,5 @@ app.openapi(listDomainsRoute, listDomainsHandler);
 app.openapi(createDomainRoute, createDomainHandler);
 app.openapi(getDomainRoute, getDomainHandler);
 app.openapi(verifyDomainRoute, verifyDomainHandler);
+app.openapi(deleteDomainRoute, deleteDomainHandler);
 app.openapi(cronVerifyRoute, cronVerifyHandler);

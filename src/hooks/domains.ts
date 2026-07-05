@@ -4,6 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { isResponseError } from "up-fetch";
 import { z } from "zod";
 import {
   type PartialDomain,
@@ -64,5 +65,20 @@ export const useCreateDomain = () => {
       api("/api/domains", { method: "POST", body: data }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: domainsQueryOptions.queryKey }),
+  });
+};
+
+/** True when create failed because another account has this name verified. */
+export const isNameTakenError = (error: unknown): boolean =>
+  isResponseError(error) && error.data?.code === "domains/name_taken";
+
+export const useDeleteDomain = (id: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api(`/api/domains/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: domainQueryOptions(id).queryKey });
+      queryClient.invalidateQueries({ queryKey: domainsQueryOptions.queryKey });
+    },
   });
 };

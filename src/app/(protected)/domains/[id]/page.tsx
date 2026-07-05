@@ -1,13 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 import type {
   CheckLogEntry,
   PartialDomain,
 } from "@/db/validationschemas";
-import { isInGrace, useDomain, useVerifyDomain } from "@/hooks/domains";
+import {
+  isInGrace,
+  useDeleteDomain,
+  useDomain,
+  useVerifyDomain,
+} from "@/hooks/domains";
+import { strings } from "@/lib/strings";
 import { StatusBadge } from "@/components/StatusBadge";
+import type { VerifyAction } from "@/domain/verification";
 
 const CopyButton = ({ value }: { value: string }) => {
   const [copied, setCopied] = useState(false);
@@ -21,7 +29,7 @@ const CopyButton = ({ value }: { value: string }) => {
       }}
       className="shrink-0 rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-foreground transition-opacity hover:opacity-80"
     >
-      {copied ? "Copied" : "Copy"}
+      {copied ? strings.copy.copied : strings.copy.idle}
     </button>
   );
 };
@@ -38,26 +46,14 @@ const Field = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-// Plain-language versions of statusReason, with what to do next.
-const REASON_EXPLANATIONS: Record<
-  NonNullable<PartialDomain["statusReason"]>,
-  string
-> = {
-  expired:
-    "We kept looking for your DNS record for the whole verification window, but it never appeared. Double-check the record below, then start verification again.",
-  superseded:
-    "Another account verified ownership of this domain, so your verification was revoked. Re-verifying will generate a brand-new DNS record for you to add — the old one won't work anymore.",
-  grace_period_expired:
-    "Your DNS record disappeared and didn't come back within the grace period, so the domain was unverified. Restore or re-add the record below and verify again.",
-  canceled: "Verification was canceled. Start again whenever you're ready.",
-};
-
-const verifyButtonLabel = (domain: PartialDomain) => {
-  if (domain.status === "in_progress" || isInGrace(domain)) return "Check again now";
-  if (domain.status === "failed" && domain.statusReason === "superseded")
-    return "Get a new record & re-verify";
-  if (domain.status === "failed") return "Try again";
-  return "I’ve added the record — verify";
+// Mirrors the server's verifyAction (not importable client-side: env/db).
+const verifyActionKey = (domain: PartialDomain): VerifyAction => {
+  if (domain.status === "not_started") return "start";
+  if (domain.status === "failed") {
+    if (domain.statusReason === "superseded") return "rotate";
+    return "restart";
+  }
+  return "check";
 };
 
 const timeAgo = (ts: number) => {
@@ -70,19 +66,9 @@ const timeAgo = (ts: number) => {
 };
 
 const logEntryLabel = (entry: CheckLogEntry): string => {
-  if (entry.status === "ok") return "Record found — all good";
-  if (entry.status === "expired") return "Verification window expired";
-  if (entry.status === "rotated") return "New DKIM record generated";
-  if (entry.status === "revoked") {
-    if (entry.reason === "superseded") return "Revoked — verified by another account";
-    if (entry.reason === "grace_period_expired") return "Revoked — grace period ran out";
-    return "Canceled";
-  }
-  // failed
-  if (entry.reason === "record_not_found") return "Record not found yet";
-  if (entry.reason === "key_mismatch") return "Found a record, but with a different key";
-  if (entry.reason === "domain_not_found") return "Domain doesn’t resolve";
-  return "Check hit an unexpected error";
+  if (entry.status === "failed") return strings.checkLog.failed[entry.reason];
+  if (entry.status === "revoked") return strings.checkLog.revoked[entry.reason];
+  return strings.checkLog[entry.status];
 };
 
 const CheckHistory = ({ log }: { log: CheckLogEntry[] }) => {
@@ -90,7 +76,7 @@ const CheckHistory = ({ log }: { log: CheckLogEntry[] }) => {
   if (recent.length === 0) return null;
   return (
     <div className="mt-8 rounded-xl border border-border bg-surface p-5 shadow-soft">
-      <h2 className="text-sm font-semibold">Recent checks</h2>
+      <h2 className="text-sm font-semibold">{strings.domainPage.historyTitle}</h2>
       <ul className="mt-3 space-y-2">
         {recent.map((entry) => (
           <li
@@ -113,7 +99,7 @@ const CheckHistory = ({ log }: { log: CheckLogEntry[] }) => {
 const DnsGuide = () => (
   <details className="mt-4 rounded-md bg-background px-3 py-2">
     <summary className="cursor-pointer text-sm text-muted hover:text-foreground">
-      First time editing DNS? No shame — everyone googles this.
+      {strings.domainPage.guideTitle}
     </summary>
     <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-muted">
       <li>
@@ -158,18 +144,28 @@ export default function DomainPage({
 
   const verify = useVerifyDomain(id);
 
+  const router = useRouter();
+  const remove = useDeleteDomain(id);
+  const onRemove = () => {
+    if (!domain) return;
+    if (!window.confirm(strings.domainPage.removeConfirm(domain.name))) return;
+    remove.mutate(undefined, { onSuccess: () => router.push("/") });
+  };
+
   const showVerifyButton = domain && (domain.status !== "verified" || isInGrace(domain));
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12">
       <Link href="/" className="text-sm text-muted hover:text-foreground">
-        ← Domains
+        {strings.domainPage.back}
       </Link>
 
-      {isPending && <p className="mt-8 text-sm text-muted">Loading domain…</p>}
+      {isPending && (
+        <p className="mt-8 text-sm text-muted">{strings.domainPage.loading}</p>
+      )}
       {error && (
         <p className="mt-8 text-sm text-peach-foreground">
-          Domain not found, or you don’t have access to it.
+          {strings.domainPage.notFound}
         </p>
       )}
 
@@ -189,35 +185,34 @@ export default function DomainPage({
 
           {domain.status === "failed" && domain.statusReason && (
             <div className="mt-4 rounded-md bg-peach px-4 py-3 text-sm text-peach-foreground">
-              {REASON_EXPLANATIONS[domain.statusReason]}
+              {strings.statusReason[domain.statusReason]}
             </div>
           )}
           {isInGrace(domain) && (
             <div className="mt-4 rounded-md bg-peach px-4 py-3 text-sm text-peach-foreground">
-              Your DNS record has stopped resolving. The domain stays verified
-              during a grace period — restore the record below before it runs
-              out to keep sending.
+              {strings.banner.gracePeriod}
             </div>
           )}
           {domain.status === "in_progress" && (
             <div className="mt-4 rounded-md bg-accent px-4 py-3 text-sm text-accent-foreground">
-              We’re checking your DNS about once a minute. This page updates
-              itself — no refreshing needed.
+              {strings.banner.inProgress}
             </div>
           )}
 
           <div className="mt-8 rounded-xl border border-border bg-surface p-5 shadow-soft">
-            <h2 className="text-sm font-semibold">DNS record</h2>
+            <h2 className="text-sm font-semibold">
+              {strings.domainPage.dnsCardTitle}
+            </h2>
             <p className="mt-1 text-sm text-muted">
-              Add this TXT record to your DNS provider to verify the domain.
+              {strings.domainPage.dnsCardIntro}
             </p>
             <div className="mt-4 grid gap-4">
               <Field
-                label="Name"
+                label={strings.domainPage.nameLabel}
                 value={`${domain.selector}._domainkey.${domain.name}`}
               />
               <Field
-                label="Value"
+                label={strings.domainPage.valueLabel}
                 value={`v=DKIM1; k=rsa; p=${domain.publicKey}`}
               />
             </div>
@@ -230,11 +225,13 @@ export default function DomainPage({
                   disabled={verify.isPending}
                   className="rounded-md bg-mint px-3 py-1.5 text-sm font-medium text-mint-foreground transition-opacity hover:opacity-80 disabled:opacity-50"
                 >
-                  {verify.isPending ? "Checking…" : verifyButtonLabel(domain)}
+                  {verify.isPending
+                    ? strings.verifyButtonPending
+                    : strings.verifyButton[verifyActionKey(domain)]}
                 </button>
                 {verify.isError && (
                   <p className="mt-2 text-xs text-peach-foreground">
-                    Couldn’t start verification. Try again.
+                    {strings.verifyError}
                   </p>
                 )}
               </div>
@@ -242,6 +239,19 @@ export default function DomainPage({
           </div>
 
           <CheckHistory log={domain.checkLog ?? []} />
+
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={onRemove}
+              disabled={remove.isPending}
+              className="text-sm text-peach-foreground hover:underline disabled:opacity-50"
+            >
+              {remove.isPending
+                ? strings.domainPage.removing
+                : strings.domainPage.remove}
+            </button>
+          </div>
         </>
       )}
     </main>
