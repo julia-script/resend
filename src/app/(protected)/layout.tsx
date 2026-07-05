@@ -1,14 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import type { PropsWithChildren } from "react";
+import { type PropsWithChildren, Suspense } from "react";
 import { UserMenu } from "@/components/auth/UserMenu";
-import { auth } from "@/lib/auth/handlers";
 
 export default async function ProtectedLayout({ children }: PropsWithChildren) {
-  const session = await auth();
-  if (!session) {
-    redirect("/signin");
-  }
   return (
     <div className="flex min-h-full flex-col">
       <header className="sticky top-0 z-10 border-b border-border bg-surface/80 backdrop-blur">
@@ -23,7 +17,9 @@ export default async function ProtectedLayout({ children }: PropsWithChildren) {
             >
               API
             </a>
-            <UserMenu user={session.user} />
+            <Suspense>
+              <UserMenu />
+            </Suspense>
           </div>
         </div>
       </header>

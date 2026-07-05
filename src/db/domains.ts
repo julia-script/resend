@@ -6,7 +6,6 @@ import { ApiError } from "@/lib/errors";
 import type { CheckLogEntry, PartialDomain } from "@/shared/domain";
 import { db } from "./client";
 import { domains } from "./schema";
-;
 
 const CHECK_LOG_MAX_ENTRIES = 100;
 

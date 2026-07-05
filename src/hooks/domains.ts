@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   queryOptions,
   useMutation,
   useQuery,
@@ -33,9 +34,12 @@ const domainQueryOptions = (id: string) =>
     queryFn: () => api(`/api/domains/${id}`, { schema: DomainResponseSchema }),
   });
 
-export const useDomain = (id: string) =>
+export const useDomain = (id: string, initialData?: PartialDomain) =>
   useQuery({
     ...domainQueryOptions(id),
+    placeholderData: keepPreviousData,
+
+    initialData: initialData ? { data: initialData } : undefined,
     refetchInterval: (query) => {
       const d = query.state.data?.data;
       if (!d) return false;

@@ -1,8 +1,13 @@
-import type { Session } from "next-auth";
+import { auth } from "@/lib/auth/handlers";
 import { SignOutButton } from "./SignOutButton";
 
-export function UserMenu({ user }: { user: Session["user"] }) {
-  const name = user?.name ?? user?.email ?? "Account";
+// Not an auth gate — pages own their own redirects. Signed out: render nothing.
+export async function UserMenu() {
+  const session = await auth();
+  if (!session) {
+    return null;
+  }
+  const name = session.user.name ?? session.user.email ?? "Account";
   const initial = name.charAt(0).toUpperCase();
   return (
     <div className="flex items-center gap-3">

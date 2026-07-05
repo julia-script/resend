@@ -10,6 +10,8 @@ type RevokedReason = Extract<CheckLogEntry, { status: "revoked" }>["reason"];
 // `satisfies` keeps every enum value covered: adding a status/reason without
 // a label is a type error here, not a blank spot in the UI.
 export const strings = {
+  loading: "Loading…",
+
   status: {
     not_started: "Not started",
     in_progress: "In progress",
@@ -71,11 +73,42 @@ export const strings = {
     nameLabel: "Name",
     valueLabel: "Value",
     guideTitle: "First time editing DNS? No shame — everyone googles this.",
-    historyTitle: "Recent checks",
+    lastChecked: (label: string, ago: string) => `${label} · ${ago}`,
     remove: "Remove domain",
     removing: "Removing…",
     removeConfirm: (name: string) =>
       `Remove ${name}? This deletes it permanently.`,
+  },
+
+  // Targeted DNS-editor guidance for detected providers. Detection is a
+  // guess from nameservers, so the copy always hedges ("Looks like…") and
+  // anything not in this map falls back to the generic guide steps.
+  dnsProviders: {
+    intro: (provider: string) =>
+      `Looks like your DNS is managed by ${provider}.`,
+    dashboardLink: (provider: string) => `Open your ${provider} DNS settings`,
+    guide: {
+      Cloudflare: {
+        nameHint:
+          "Cloudflare adds “.yourdomain.com” for you — paste only the part of the Name before your domain.",
+        dashboard: "https://dash.cloudflare.com",
+      },
+      GoDaddy: {
+        nameHint:
+          "GoDaddy adds your domain to the Name automatically — paste only the part before it.",
+        dashboard: "https://dcc.godaddy.com/domains",
+      },
+      Namecheap: {
+        nameHint:
+          "In Namecheap the Name field is called “Host”, and it adds your domain for you — paste only the part before it.",
+        dashboard: "https://ap.www.namecheap.com/domains/list/",
+      },
+      AWS: {
+        nameHint:
+          "Route 53 wants the full record name exactly as shown above, including your domain.",
+        dashboard: "https://console.aws.amazon.com/route53/",
+      },
+    } as Record<string, { nameHint: string; dashboard: string } | undefined>,
   },
 
   domainList: {
