@@ -105,7 +105,8 @@ export const getDomainsDueForCheck = async (
       .from(domains)
       .where(
         and(
-          inArray(domains.status, ["in_progress"]),
+          // verified is swept too: that's how grace-period monitoring runs.
+          inArray(domains.status, ["in_progress", "verified"]),
           lte(domains.nextCheckAt, new Date()),
         ),
       )

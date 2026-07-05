@@ -15,7 +15,11 @@ export const cronVerifyRoute = createRoute({
       description: "Cron tick accepted",
       content: {
         "application/json": {
-          schema: z.object({ ok: z.boolean(), checked: z.number() }),
+          schema: z.object({
+            ok: z.boolean(),
+            checked: z.number(),
+            failed: z.number(),
+          }),
         },
       },
     },
@@ -42,10 +46,33 @@ export const cronVerifyHandler: RouteHandler<
 
   const domains = await getDomainsDueForCheck();
   const now = new Date();
-  const results = await Promise.all(
+  // allSettled: one domain's failure must not abort the sweep or drop
+  // the other domains' notifications.
+  const results = await Promise.allSettled(
     domains.map((domain) => verifyDomain(domain, now)),
   );
-  // One batched send for the whole sweep (Resend rate-limits individual sends).
-  await dispatchNotifications(results.flatMap((r) => r.notifications));
-  return c.json({ ok: true, checked: domains.length }, 200);
+  const fulfilled = results.filter(
+    (r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof verifyDomain>>> =>
+      r.status === "fulfilled",
+  );
+  for (const r of results) {
+    if (r.status === "rejected") console.error("cron: domain check failed", r.reason);
+  }
+
+  try {
+    // One batched send for the whole sweep (Resend rate-limits individual sends).
+    await dispatchNotifications(fulfilled.flatMap((r) => r.value.notifications));
+  } catch (error) {
+    // State is already persisted; losing emails must not fail the tick.
+    console.error("cron: notification dispatch failed", error);
+  }
+
+  return c.json(
+    {
+      ok: true,
+      checked: fulfilled.length,
+      failed: results.length - fulfilled.length,
+    },
+    200,
+  );
 };
