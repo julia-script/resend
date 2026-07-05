@@ -38,6 +38,16 @@ export type Transition = {
   events?: VerificationEvent[];
 };
 
+/** True when anything was logged for this domain more recently than throttleMs. */
+export const isCheckThrottled = (
+  domain: PartialDomain,
+  now: Date,
+  throttleMs: number,
+): boolean => {
+  const lastActivityAt = domain.checkLog?.at(-1)?.checkedAt ?? 0;
+  return now.getTime() - lastActivityAt < throttleMs;
+};
+
 export type VerifyAction = "start" | "restart" | "rotate" | "check";
 
 /**

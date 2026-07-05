@@ -3,7 +3,7 @@ import type { PartialDomain } from "@/db/validationschemas";
 import { ApiError } from "@/lib/api/helpers";
 import { env } from "@/lib/env";
 import type { CheckDkimResult } from "./dkim";
-import { transition, verifyAction } from "./verification";
+import { isCheckThrottled, transition, verifyAction } from "./verification";
 
 const {
   gracePeriodMs: GRACE_PERIOD,
@@ -222,6 +222,34 @@ describe("verifyAction", () => {
     expect(
       verifyAction(makeDomain({ status: "failed", statusReason: "superseded" })),
     ).toBe("rotate");
+  });
+});
+
+describe("isCheckThrottled", () => {
+  const THROTTLE = 30_000;
+
+  test("empty log → not throttled", () => {
+    expect(isCheckThrottled(makeDomain({ checkLog: [] }), NOW, THROTTLE)).toBe(
+      false,
+    );
+  });
+
+  test("fresh entry (any kind) → throttled", () => {
+    const log = [
+      { status: "rotated", checkedAt: NOW.getTime() - 5_000 } as const,
+    ];
+    expect(isCheckThrottled(makeDomain({ checkLog: log }), NOW, THROTTLE)).toBe(
+      true,
+    );
+  });
+
+  test("stale entry → not throttled", () => {
+    const log = [
+      { status: "ok", checkedAt: NOW.getTime() - THROTTLE - 1 } as const,
+    ];
+    expect(isCheckThrottled(makeDomain({ checkLog: log }), NOW, THROTTLE)).toBe(
+      false,
+    );
   });
 });
 
