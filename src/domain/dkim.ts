@@ -2,7 +2,11 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import * as tldts from "tldts";
 import { ApiError, type Result } from "@/lib/errors";
-import { dkimRecordName } from "@/shared/domain";
+import {
+  type DnsMockResponse,
+  dkimRecordName,
+  isMockDomainName,
+} from "@/shared/domain";
 import { generateRsaKeyPair } from "./crypto";
 import { resolveTxt } from "./dns";
 
@@ -24,16 +28,41 @@ export const generateDkimKeys = async () => {
 const isDomainValid = (name: string) => {
   return tldts.getDomain(name) !== null;
 };
-const resolveDkim = async (selector: string, domain: string) => {
+const resolveTxtOrMock = async (
+  selector: string,
+  domain: string,
+  mockRecord?: DnsMockResponse | null,
+) => {
+  if (mockRecord && isMockDomainName(domain)) {
+    if (mockRecord.type === "success") {
+      // Mirror dns.resolveTxt's string[][]: each entry is one single-chunk record.
+      return {
+        type: "success" as const,
+        value: mockRecord.value.map((v) => [v]),
+      };
+    }
+    return {
+      type: "failure" as const,
+      error: new ApiError({
+        code: `dns/${mockRecord.error}`,
+        message: mockRecord.error,
+      }),
+    };
+  }
+  return resolveTxt(dkimRecordName({ selector, name: domain }));
+};
+const resolveDkim = async (
+  selector: string,
+  domain: string,
+  mockRecord?: DnsMockResponse | null,
+) => {
   if (!isDomainValid(domain)) {
     throw new ApiError({
       code: "dkim/invalid_domain",
       message: "Invalid domain",
     });
   }
-  // happy path first
-  const record = dkimRecordName({ selector, name: domain });
-  const result = await resolveTxt(record);
+  const result = await resolveTxtOrMock(selector, domain, mockRecord);
   if (result.type === "success") {
     return result.value;
   }
@@ -57,9 +86,15 @@ export const checkDkim = async (options: {
   selector: string;
   domain: string;
   publicKey: string;
+  /** Canned DNS answer for mock domains — resolved by the caller, not the DB. */
+  mockRecord?: DnsMockResponse | null;
 }): Promise<Result<string, ApiError>> => {
   try {
-    const records = await resolveDkim(options.selector, options.domain);
+    const records = await resolveDkim(
+      options.selector,
+      options.domain,
+      options.mockRecord,
+    );
     // Compare the p= tag only: providers may reorder/drop v= and k= tags.
     const match = records
       .map((chunks) => chunks.join(""))

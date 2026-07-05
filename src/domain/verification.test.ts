@@ -31,6 +31,7 @@ const makeDomain = (overrides: Partial<PartialDomain> = {}): PartialDomain => ({
   verifiedAt: null,
   createdAt: new Date(NOW.getTime() - minutes(120)),
   updatedAt: new Date(NOW.getTime() - minutes(1)),
+  dnsMockRecord: null,
   ...overrides,
 });
 

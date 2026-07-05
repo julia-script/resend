@@ -34,6 +34,7 @@ const domain: PartialDomain = {
   verifiedAt: null,
   createdAt: NOW,
   updatedAt: NOW,
+  dnsMockRecord: null,
 };
 
 beforeEach(() => {
@@ -144,5 +145,6 @@ test("passes the domain's own selector/name/key to the DKIM check", async () => 
     selector: "abc123",
     domain: "example.com",
     publicKey: "PUBKEY",
+    mockRecord: null,
   });
 });

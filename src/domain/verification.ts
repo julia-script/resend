@@ -262,6 +262,7 @@ export const verifyDomain = async (
     selector: domain.selector,
     domain: domain.name,
     publicKey: domain.publicKey,
+    mockRecord: env.enableMock ? domain.dnsMockRecord : null,
   });
 
   const result = transition(domain, check, now);

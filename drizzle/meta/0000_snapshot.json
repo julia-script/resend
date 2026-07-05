@@ -1,5 +1,5 @@
 {
-  "id": "ccedcd83-a03e-4916-b1a9-e6412f0fd8d0",
+  "id": "444923b9-776a-459e-b0ce-31934892abe9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -81,8 +81,12 @@
           "name": "account_userId_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -152,8 +156,12 @@
           "name": "authenticator_userId_user_id_fk",
           "tableFrom": "authenticator",
           "tableTo": "user",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -163,113 +171,11 @@
         "authenticator_credentialID_unique": {
           "name": "authenticator_credentialID_unique",
           "nullsNotDistinct": false,
-          "columns": ["credentialID"]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.check": {
-      "name": "check",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "domain_id": {
-          "name": "domain_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "record_purpose": {
-          "name": "record_purpose",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'dkim'"
-        },
-        "checked_at": {
-          "name": "checked_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "trigger": {
-          "name": "trigger",
-          "type": "check_trigger",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "outcome": {
-          "name": "outcome",
-          "type": "check_outcome",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "nameservers_queried": {
-          "name": "nameservers_queried",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "found_value": {
-          "name": "found_value",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "caused_transition": {
-          "name": "caused_transition",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        }
-      },
-      "indexes": {
-        "check_timeline_idx": {
-          "name": "check_timeline_idx",
           "columns": [
-            {
-              "expression": "domain_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "checked_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+            "credentialID"
+          ]
         }
       },
-      "foreignKeys": {
-        "check_domain_id_domain_id_fk": {
-          "name": "check_domain_id_domain_id_fk",
-          "tableFrom": "check",
-          "tableTo": "domain",
-          "columnsFrom": ["domain_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -314,6 +220,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "grace_period_started_at": {
+          "name": "grace_period_started_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grace_period_warning_sent_at": {
+          "name": "grace_period_warning_sent_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "status": {
           "name": "status",
           "type": "domain_status",
@@ -328,6 +246,13 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
+        },
+        "check_log": {
+          "name": "check_log",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "next_check_at": {
           "name": "next_check_at",
@@ -360,6 +285,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "dns_mock_record": {
+          "name": "dns_mock_record",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"type\":\"failure\",\"error\":\"ENODATA\"}'::jsonb"
         }
       },
       "indexes": {
@@ -390,8 +322,12 @@
           "name": "domain_user_id_user_id_fk",
           "tableFrom": "domain",
           "tableTo": "user",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -401,7 +337,10 @@
         "domain_user_id_name_unique": {
           "name": "domain_user_id_name_unique",
           "nullsNotDistinct": false,
-          "columns": ["user_id", "name"]
+          "columns": [
+            "user_id",
+            "name"
+          ]
         }
       },
       "policies": {},
@@ -437,8 +376,12 @@
           "name": "session_userId_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -491,7 +434,9 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -531,23 +476,6 @@
     }
   },
   "enums": {
-    "public.check_outcome": {
-      "name": "check_outcome",
-      "schema": "public",
-      "values": [
-        "verified",
-        "not_found",
-        "value_mismatch",
-        "wrong_host",
-        "no_delegation",
-        "dns_error"
-      ]
-    },
-    "public.check_trigger": {
-      "name": "check_trigger",
-      "schema": "public",
-      "values": ["cron", "manual", "page_load"]
-    },
     "public.domain_status": {
       "name": "domain_status",
       "schema": "public",
@@ -555,14 +483,18 @@
         "not_started",
         "in_progress",
         "verified",
-        "failed",
-        "temporary_failure"
+        "failed"
       ]
     },
     "public.domain_status_reason": {
       "name": "domain_status_reason",
       "schema": "public",
-      "values": ["window_expired", "revoked_after_grace"]
+      "values": [
+        "expired",
+        "canceled",
+        "superseded",
+        "grace_period_expired"
+      ]
     }
   },
   "schemas": {},

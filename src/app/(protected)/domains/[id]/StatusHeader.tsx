@@ -4,12 +4,14 @@ import { isInGrace, useDomain } from "@/hooks/domains";
 import { strings } from "@/lib/strings";
 import type { CheckLogEntry, PartialDomain } from "@/shared/domain";
 
+/** Relative time in either direction: "5 minutes ago" / "in 5 minutes". */
 export const timeAgo = (ts: number) => {
   const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
   const minutes = Math.round((ts - Date.now()) / 60_000);
-  if (minutes > -1) return "just now";
-  if (minutes > -60) return rtf.format(minutes, "minute");
-  if (minutes > -60 * 24) return rtf.format(Math.round(minutes / 60), "hour");
+  if (Math.abs(minutes) < 1) return "just now";
+  if (Math.abs(minutes) < 60) return rtf.format(minutes, "minute");
+  if (Math.abs(minutes) < 60 * 24)
+    return rtf.format(Math.round(minutes / 60), "hour");
   return rtf.format(Math.round(minutes / (60 * 24)), "day");
 };
 

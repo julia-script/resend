@@ -1,7 +1,5 @@
-CREATE TYPE "public"."check_outcome" AS ENUM('verified', 'not_found', 'value_mismatch', 'wrong_host', 'no_delegation', 'dns_error');--> statement-breakpoint
-CREATE TYPE "public"."check_trigger" AS ENUM('cron', 'manual', 'page_load');--> statement-breakpoint
-CREATE TYPE "public"."domain_status" AS ENUM('not_started', 'in_progress', 'verified', 'failed', 'temporary_failure');--> statement-breakpoint
-CREATE TYPE "public"."domain_status_reason" AS ENUM('window_expired', 'revoked_after_grace');--> statement-breakpoint
+CREATE TYPE "public"."domain_status" AS ENUM('not_started', 'in_progress', 'verified', 'failed');--> statement-breakpoint
+CREATE TYPE "public"."domain_status_reason" AS ENUM('expired', 'canceled', 'superseded', 'grace_period_expired');--> statement-breakpoint
 CREATE TABLE "account" (
 	"userId" uuid NOT NULL,
 	"type" text NOT NULL,
@@ -28,18 +26,6 @@ CREATE TABLE "authenticator" (
 	CONSTRAINT "authenticator_credentialID_unique" UNIQUE("credentialID")
 );
 --> statement-breakpoint
-CREATE TABLE "check" (
-	"id" uuid PRIMARY KEY NOT NULL,
-	"domain_id" uuid NOT NULL,
-	"record_purpose" text DEFAULT 'dkim' NOT NULL,
-	"checked_at" timestamp DEFAULT now() NOT NULL,
-	"trigger" "check_trigger" NOT NULL,
-	"outcome" "check_outcome" NOT NULL,
-	"nameservers_queried" text[],
-	"found_value" text,
-	"caused_transition" boolean DEFAULT false NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE "domain" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -47,13 +33,17 @@ CREATE TABLE "domain" (
 	"selector" text NOT NULL,
 	"public_key" text NOT NULL,
 	"private_key_encrypted" text NOT NULL,
+	"grace_period_started_at" timestamp,
+	"grace_period_warning_sent_at" timestamp,
 	"status" "domain_status" DEFAULT 'not_started' NOT NULL,
 	"status_reason" "domain_status_reason",
+	"check_log" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"next_check_at" timestamp,
 	"deadline_at" timestamp,
 	"verified_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"dns_mock_record" jsonb DEFAULT '{"type":"failure","error":"ENODATA"}'::jsonb NOT NULL,
 	CONSTRAINT "domain_user_id_name_unique" UNIQUE("user_id","name")
 );
 --> statement-breakpoint
@@ -80,8 +70,6 @@ CREATE TABLE "verificationToken" (
 --> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "authenticator" ADD CONSTRAINT "authenticator_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "check" ADD CONSTRAINT "check_domain_id_domain_id_fk" FOREIGN KEY ("domain_id") REFERENCES "public"."domain"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "domain" ADD CONSTRAINT "domain_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "check_timeline_idx" ON "check" USING btree ("domain_id","checked_at");--> statement-breakpoint
 CREATE INDEX "domain_due_checks_idx" ON "domain" USING btree ("status","next_check_at");

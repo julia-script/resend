@@ -1,5 +1,45 @@
 import { z } from "zod";
+// import "dns/promises"
 
+export const DnsMockResponseErrorSchema = z.union([
+  z.literal("ENODATA"),
+  z.literal("ENOTFOUND"),
+  z.literal("EFORMERR"),
+  z.literal("ESERVFAIL"),
+  z.literal("ENOTIMP"),
+  z.literal("EREFUSED"),
+  z.literal("EBADQUERY"),
+  z.literal("EBADNAME"),
+  z.literal("EBADFAMILY"),
+  z.literal("EBADRESP"),
+  z.literal("ECONNREFUSED"),
+  z.literal("ETIMEOUT"),
+  z.literal("EOF"),
+  z.literal("EFILE"),
+  z.literal("ENOMEM"),
+  z.literal("EDESTRUCTION"),
+  z.literal("EBADSTR"),
+  z.literal("EBADFLAGS"),
+  z.literal("ENONAME"),
+  z.literal("EBADHINTS"),
+  z.literal("ENOTINITIALIZED"),
+  z.literal("ELOADIPHLPAPI"),
+  z.literal("EADDRGETNETWORKPARAMS"),
+  z.literal("ECANCELLED"),
+]);
+
+export type DnsMockResponse = z.infer<typeof DnsMockResponseSchema>;
+
+export const DnsMockResponseSchema = z.union([
+  z.object({
+    type: z.literal("success"),
+    value: z.array(z.string()),
+  }),
+  z.object({
+    type: z.literal("failure"),
+    error: DnsMockResponseErrorSchema,
+  }),
+]);
 // Client-safe module: no imports from ./schema (it opens a DB connection and
 // would drag postgres/fs into the browser bundle). schema.ts builds its
 // pgEnums from these arrays, so this stays the single source of truth.
@@ -68,11 +108,16 @@ export const PartialDomainSchema = z.object({
   verifiedAt: z.coerce.date().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
+  dnsMockRecord: DnsMockResponseSchema.nullable(),
 });
 
 export type PartialDomain = z.infer<typeof PartialDomainSchema>;
 
 export type CheckLogEntry = z.input<typeof CheckLogEntrySchema>;
+
+// A domain is mock-resolvable when "mock" appears as its own label/word.
+// Single source of truth for the resolver and the mocks page.
+export const isMockDomainName = (name: string) => /\bmock\b/.test(name);
 
 // The DKIM TXT record, written once for the resolver and every UI surface.
 export const dkimRecordName = (d: { selector: string; name: string }) =>

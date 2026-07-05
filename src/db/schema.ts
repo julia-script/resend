@@ -120,27 +120,16 @@ export const domains = pgTable(
       .notNull()
       .defaultNow()
       .$onUpdate(() => new Date()),
+    dnsMockRecord: jsonb("dns_mock_record")
+      .$type<DnsMockResponse>()
+      .notNull()
+      .default({ type: "failure", error: "ENODATA" }),
   },
   (domain) => [
     unique().on(domain.userId, domain.name),
     index("domain_due_checks_idx").on(domain.status, domain.nextCheckAt),
   ],
 );
-
-// Test-only DNS mocks (ENABLE_MOCK): resolveTxt reads these for `.mock.`
-// names. domainName is the full TXT query name (<selector>._domainkey.<name>).
-export const dnsMockRecords = pgTable("dns_mock_records", {
-  id: uuid("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  domainName: text("domain_name").notNull().unique(),
-  recordResponse: jsonb("record_response").$type<DnsMockResponse>().notNull(),
-  createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { mode: "date" })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-});
 
 export const authenticators = pgTable(
   "authenticator",

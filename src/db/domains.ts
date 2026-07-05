@@ -38,6 +38,7 @@ const partialDomainTable = {
   verifiedAt: domains.verifiedAt,
   createdAt: domains.createdAt,
   updatedAt: domains.updatedAt,
+  dnsMockRecord: domains.dnsMockRecord,
 };
 
 export const getDomainsByUserId = async (
