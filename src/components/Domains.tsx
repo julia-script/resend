@@ -1,25 +1,13 @@
 "use client";
 
-import { useSession } from "@/hooks/session";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
-import { z } from "zod";
-import { api } from "@/lib/api/client";
-import { PartialDomainSchema } from "@/db/validationschemas";
+import { useCreateDomain, useDomains } from "@/hooks/domains";
 import { StatusBadge } from "./StatusBadge";
 
 const CreateDomain = () => {
   const [name, setName] = useState("");
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (data: { name: string; enforce: boolean }) =>
-      api("/api/domains", { method: "POST", body: data }),
-    onSuccess: () => {
-      setName("");
-      queryClient.invalidateQueries({ queryKey: ["domains"] });
-    },
-  });
+  const mutation = useCreateDomain();
   return (
     <div>
       <form
@@ -27,7 +15,10 @@ const CreateDomain = () => {
         onSubmit={(e) => {
           e.preventDefault();
           if (name.trim())
-            mutation.mutate({ name: name.trim(), enforce: false });
+            mutation.mutate(
+              { name: name.trim(), enforce: false },
+              { onSuccess: () => setName("") },
+            );
         }}
       >
         <input
@@ -57,16 +48,7 @@ const CreateDomain = () => {
 };
 
 export const Domains = () => {
-  const { data: session } = useSession();
-
-  const { data, error, isPending } = useQuery({
-    queryKey: ["domains"],
-    queryFn: () =>
-      api("/api/domains", {
-        schema: z.object({ data: z.array(PartialDomainSchema) }),
-      }),
-    enabled: !!session,
-  });
+  const { data, error, isPending } = useDomains();
   const domains = data?.data;
 
   return (

@@ -42,13 +42,13 @@ export const verifyDomainHandler: RouteHandler<
     );
   }
   if (domain.status === "not_started") {
-    await updateDomain(domain.id, {
+    const updated = await updateDomain(domain.id, {
       status: "in_progress",
       nextCheckAt: new Date(),
       deadlineAt: new Date(Date.now() + env.verificationWindowMs),
     });
+    return c.json({ data: updated ?? domain }, 200);
   }
-
 
   return c.json({ data: domain }, 200);
 };
