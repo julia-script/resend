@@ -16,7 +16,15 @@ export default async function ProtectedLayout({ children }: PropsWithChildren) {
           <Link href="/" className="font-semibold tracking-tight">
             resend<span className="text-accent-foreground">.</span>
           </Link>
-          <UserMenu user={session.user} />
+          <div className="flex items-center gap-4">
+            <a
+              href="/api/reference"
+              className="text-sm text-muted transition-colors hover:text-foreground"
+            >
+              API
+            </a>
+            <UserMenu user={session.user} />
+          </div>
         </div>
       </header>
       {children}

@@ -1,6 +1,10 @@
 import "server-only";
 import { createRoute, type RouteHandler } from "@hono/zod-openapi";
-import { getDomainsByName, insertDomain } from "@/db/domains";
+import {
+  getDomainByNameAndUserId,
+  hasVerifiedDomainByName,
+  insertDomain,
+} from "@/db/domains";
 import * as Dkim from "@/domain/dkim";
 import { ApiErrorSchema } from "@/lib/errors";
 import { CreateDomainInputSchema, DomainResponseSchema } from "@/shared/api";
@@ -53,15 +57,15 @@ export const createDomainHandler: RouteHandler<
   const input = c.req.valid("json");
   const normalizedName = Dkim.normalizeDomainName(input.name);
 
-  const existing = await getDomainsByName(normalizedName);
-  const mine = existing.find((d) => d.userId === session.user.id);
+  const mine = await getDomainByNameAndUserId(normalizedName, session.user.id);
   if (mine) {
     return c.json({ data: mine }, 200);
   }
 
-  // Someone else's verified copy: warn first; enforce means the user
-  // confirmed the takeover (whoever verifies wins — see supersedeOthers).
-  const verifiedByOther = existing.some((d) => d.status === "verified");
+  // Someone else's verified copy (mine was ruled out above): warn first;
+  // enforce means the user confirmed the takeover (whoever verifies wins —
+  // see supersedeOthers).
+  const verifiedByOther = await hasVerifiedDomainByName(normalizedName);
   if (verifiedByOther && !input.enforce) {
     return c.json(
       {

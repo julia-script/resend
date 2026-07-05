@@ -48,31 +48,43 @@ test("null transition (failed domain) → no DB write, no notifications", async 
   expect(result.notifications).toEqual([]);
 });
 
-test("appends the new entry to the existing checkLog", async () => {
+test("passes only the new entry as an append — concat happens in SQL", async () => {
   vi.mocked(checkDkim).mockResolvedValue({ type: "success", value: "rec" });
   const existing = [{ status: "ok", checkedAt: 1 } as const];
   await verifyDomain({ ...domain, checkLog: existing }, NOW);
   const written = vi.mocked(updateDomain).mock.calls[0][1];
-  expect(written.checkLog).toEqual([
-    { status: "ok", checkedAt: 1 },
+  expect(written.appendCheckLog).toEqual([
     { status: "ok", checkedAt: NOW.getTime() },
   ]);
+  expect(written).not.toHaveProperty("checkLog");
 });
 
-test("caps checkLog at 100 entries, dropping the oldest", async () => {
+test("no row persisted (deleted mid-check) → no notifications, no supersede sweep", async () => {
   vi.mocked(checkDkim).mockResolvedValue({ type: "success", value: "rec" });
-  const existing = Array.from({ length: 100 }, (_, i) => ({
-    status: "ok" as const,
-    checkedAt: i,
-  }));
-  await verifyDomain({ ...domain, checkLog: existing }, NOW);
-  const written = vi.mocked(updateDomain).mock.calls[0][1];
-  expect(written.checkLog).toHaveLength(100);
-  expect(written.checkLog?.[0]).toEqual({ status: "ok", checkedAt: 1 });
-  expect(written.checkLog?.at(-1)).toEqual({
-    status: "ok",
-    checkedAt: NOW.getTime(),
-  });
+  vi.mocked(updateDomain).mockResolvedValueOnce(null);
+  const result = await verifyDomain(domain, NOW);
+  expect(result.notifications).toEqual([]);
+  expect(getVerifiedDomainsByName).not.toHaveBeenCalled();
+  expect(result.domain).toMatchObject({ id: "d1" });
+});
+
+test("revoke affecting no row → no superseded notification for that owner", async () => {
+  vi.mocked(checkDkim).mockResolvedValue({ type: "success", value: "rec" });
+  const previousOwner = {
+    ...domain,
+    id: "d2",
+    userId: "u2",
+    status: "verified" as const,
+  };
+  vi.mocked(getVerifiedDomainsByName).mockResolvedValueOnce([previousOwner]);
+  // Main domain persists; the revoke of d2 hits no row.
+  vi.mocked(updateDomain)
+    .mockResolvedValueOnce({ ...domain, status: "verified" })
+    .mockResolvedValueOnce(null);
+  const result = await verifyDomain(domain, NOW);
+  expect(result.notifications).toEqual([
+    { event: "notifyVerificationSucceeded", domain },
+  ]);
 });
 
 test("returns the transition's events as notifications", async () => {
@@ -105,7 +117,7 @@ test("fresh verification revokes another owner's verified copy and queues their 
     deadlineAt: null,
     gracePeriodStartedAt: null,
     gracePeriodWarningSentAt: null,
-    checkLog: [
+    appendCheckLog: [
       { status: "revoked", reason: "superseded", checkedAt: NOW.getTime() },
     ],
   });

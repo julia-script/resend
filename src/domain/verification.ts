@@ -12,9 +12,6 @@ import type { CheckDkimResult } from "./dkim";
 import * as Dkim from "./dkim";
 import type { Notification } from "./notifications";
 
-// ponytail: unbounded jsonb growth otherwise; raise if the log needs history.
-const CHECK_LOG_MAX_ENTRIES = 100;
-
 const addMs = (date: Date, ms: number) => new Date(date.getTime() + ms);
 const isPast = (date: Date, now: Date) => date.getTime() < now.getTime();
 
@@ -35,7 +32,7 @@ export type VerificationEvent =
   | "notifyGracePeriodStarted"
   | "notifyDomainSuperseded";
 export type Transition = {
-  update: RequiredBy<DomainUpdate, "checkLog">;
+  update: RequiredBy<DomainUpdate, "appendCheckLog">;
   events?: VerificationEvent[];
 };
 
@@ -90,7 +87,7 @@ export const transition = (
           deadlineAt: null,
           gracePeriodStartedAt: null,
           gracePeriodWarningSentAt: null,
-          checkLog: [{ status: "ok", checkedAt: now.getTime() }],
+          appendCheckLog: [{ status: "ok", checkedAt: now.getTime() }],
         },
         events: ["notifyVerificationSucceeded"],
       };
@@ -106,7 +103,7 @@ export const transition = (
           gracePeriodStartedAt: null,
           gracePeriodWarningSentAt: null,
           verifiedAt: null,
-          checkLog: [{ status: "expired", checkedAt: now.getTime() }],
+          appendCheckLog: [{ status: "expired", checkedAt: now.getTime() }],
         },
         events: ["notifyVerificationFailed"],
       };
@@ -121,7 +118,7 @@ export const transition = (
         gracePeriodStartedAt: null,
         gracePeriodWarningSentAt: null,
         verifiedAt: null,
-        checkLog: [
+        appendCheckLog: [
           {
             status: "failed",
             checkedAt: now.getTime(),
@@ -142,7 +139,7 @@ export const transition = (
           gracePeriodStartedAt: null,
           gracePeriodWarningSentAt: null,
           deadlineAt: null,
-          checkLog: [{ status: "ok", checkedAt: now.getTime() }],
+          appendCheckLog: [{ status: "ok", checkedAt: now.getTime() }],
         },
       };
     }
@@ -165,7 +162,7 @@ export const transition = (
             gracePeriodWarningSentAt: null,
             verifiedAt: null,
             deadlineAt: null,
-            checkLog: [failedEntry],
+            appendCheckLog: [failedEntry],
           },
           events: ["notifyGracePeriodExpired"],
         };
@@ -189,7 +186,7 @@ export const transition = (
             : domain.gracePeriodWarningSentAt,
           verifiedAt: domain.verifiedAt,
           deadlineAt: null,
-          checkLog: [failedEntry],
+          appendCheckLog: [failedEntry],
         },
         events: shouldWarn ? ["notifyGracePeriodWarning"] : [],
       };
@@ -205,7 +202,7 @@ export const transition = (
         gracePeriodStartedAt: now,
         gracePeriodWarningSentAt: null,
         deadlineAt: null,
-        checkLog: [failedEntry],
+        appendCheckLog: [failedEntry],
       },
       events: ["notifyGracePeriodStarted"],
     };
@@ -215,21 +212,22 @@ export const transition = (
   return null;
 };
 
-const appendLog = (existing: CheckLogEntry[] | null, added: CheckLogEntry[]) =>
-  [...(existing ?? []), ...added].slice(-CHECK_LOG_MAX_ENTRIES);
-
 /**
  * A domain just got verified: any other account's verified copy of the same
- * name loses it. Revokes them and returns the notifications to send.
+ * name loses it. Revokes them and returns the notifications to send — only
+ * for rows whose revoke actually persisted, so nobody is told about a state
+ * that isn't in the database.
  */
+// ponytail: not transactional — a revoke that throws mid-sweep can leave
+// another verified copy standing; wrap in db.transaction if it matters.
 const supersedeOthers = async (
   domain: PartialDomain,
   now: Date,
 ): Promise<Notification[]> => {
   const others = await getVerifiedDomainsByName(domain.name, domain.id);
-  await Promise.all(
-    others.map((other) =>
-      updateDomain(other.id, {
+  const revoked = await Promise.all(
+    others.map(async (other) => {
+      const updated = await updateDomain(other.id, {
         status: "failed",
         statusReason: "superseded",
         verifiedAt: null,
@@ -237,16 +235,19 @@ const supersedeOthers = async (
         deadlineAt: null,
         gracePeriodStartedAt: null,
         gracePeriodWarningSentAt: null,
-        checkLog: appendLog(other.checkLog, [
+        appendCheckLog: [
           { status: "revoked", reason: "superseded", checkedAt: now.getTime() },
-        ]),
-      }),
-    ),
+        ],
+      });
+      return updated ? other : null;
+    }),
   );
-  return others.map((other) => ({
-    event: "notifyDomainSuperseded",
-    domain: other,
-  }));
+  return revoked
+    .filter((other): other is PartialDomain => other !== null)
+    .map((other) => ({
+      event: "notifyDomainSuperseded" as const,
+      domain: other,
+    }));
 };
 
 /**
@@ -266,10 +267,9 @@ export const verifyDomain = async (
   const result = transition(domain, check, now);
   if (!result) return { domain, notifications: [] };
 
-  const updated = await updateDomain(domain.id, {
-    ...result.update,
-    checkLog: appendLog(domain.checkLog, result.update.checkLog),
-  });
+  const updated = await updateDomain(domain.id, result.update);
+  // Nothing persisted (e.g. deleted mid-check): announce nothing.
+  if (!updated) return { domain, notifications: [] };
 
   const notifications: Notification[] = (result.events ?? []).map((event) => ({
     event,
@@ -279,5 +279,5 @@ export const verifyDomain = async (
   if (result.events?.includes("notifyVerificationSucceeded")) {
     notifications.push(...(await supersedeOthers(domain, now)));
   }
-  return { domain: updated ?? domain, notifications };
+  return { domain: updated, notifications };
 };

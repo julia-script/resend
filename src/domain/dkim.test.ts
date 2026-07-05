@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { checkDkim } from "./dkim";
+import { checkDkim, normalizeDomainName } from "./dkim";
 
 // Live DNS fixtures, same as the pre-refactor test suite: jlort.com publishes
 // this key at resend._domainkey.
@@ -37,6 +37,19 @@ test("missing record fails with record_not_found", async () => {
     type: "failure",
     error: { code: "dkim/record_not_found" },
   });
+});
+
+// IDN names must reach DNS in punycode — the form DNS actually resolves.
+test("normalizes unicode domains to punycode", () => {
+  expect(normalizeDomainName("münchen.de")).toBe("xn--mnchen-3ya.de");
+});
+
+test("already-punycoded names pass through unchanged", () => {
+  expect(normalizeDomainName("xn--mnchen-3ya.de")).toBe("xn--mnchen-3ya.de");
+});
+
+test("normalizes unicode with uppercase and trailing dot", () => {
+  expect(normalizeDomainName("MÜNCHEN.de.")).toBe("xn--mnchen-3ya.de");
 });
 
 test("invalid domain fails without throwing", async () => {

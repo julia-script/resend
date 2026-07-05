@@ -49,7 +49,7 @@ describe("in_progress", () => {
       verifiedAt: NOW,
       deadlineAt: null,
       nextCheckAt: new Date(NOW.getTime() + SUCCESS_RECHECK_INTERVAL),
-      checkLog: [{ status: "ok", checkedAt: NOW.getTime() }],
+      appendCheckLog: [{ status: "ok", checkedAt: NOW.getTime() }],
     });
     expect(t?.events).toEqual(["notifyVerificationSucceeded"]);
   });
@@ -59,7 +59,7 @@ describe("in_progress", () => {
     expect(t?.update).toMatchObject({
       status: "in_progress",
       nextCheckAt: new Date(NOW.getTime() + PENDING_RECHECK_INTERVAL),
-      checkLog: [
+      appendCheckLog: [
         {
           status: "failed",
           reason: "record_not_found",
@@ -86,7 +86,7 @@ describe("in_progress", () => {
       status: "failed",
       statusReason: "expired",
       nextCheckAt: null,
-      checkLog: [{ status: "expired", checkedAt: NOW.getTime() }],
+      appendCheckLog: [{ status: "expired", checkedAt: NOW.getTime() }],
     });
     expect(t?.events).toEqual(["notifyVerificationFailed"]);
   });
@@ -99,7 +99,7 @@ describe("in_progress", () => {
   test("maps dkim error codes to log reasons", () => {
     const reason = (code: string) => {
       const t = transition(makeDomain(), fail(code), NOW);
-      const entry = t?.update.checkLog[0];
+      const entry = t?.update.appendCheckLog[0];
       return entry?.status === "failed" ? entry.reason : undefined;
     };
     expect(reason("dkim/key_mismatch")).toBe("key_mismatch");

@@ -6,18 +6,22 @@ import { ApiError } from "@/lib/errors";
 import type { CheckLogEntry, PartialDomain } from "@/shared/domain";
 import { db } from "./client";
 import { domains } from "./schema";
+;
 
-// // class CreateDomainError extends Schema.TaggedErrorClass<CreateDomainError>()(
-//   "CreateDomainError",
-//   {
-//     message: Schema.String,
-//   },
-// ) {}
+const CHECK_LOG_MAX_ENTRIES = 100;
 
-// type DomainInsert = Pick<
-//   typeof domains.$inferInsert,
-//   "name" | "userId" | "publicKey"
-// > & { privateKey: string };
+/**
+ * Concat-and-cap in a single UPDATE expression so concurrent checks can't
+ * lose each other's entries to a read-modify-write race.
+ */
+const appendCheckLogSql = (entries: CheckLogEntry[]) => {
+  const appended = sql`${domains.checkLog} || ${JSON.stringify(entries)}::jsonb`;
+  return sql`(
+    SELECT coalesce(jsonb_agg(elem ORDER BY ord), '[]'::jsonb)
+    FROM jsonb_array_elements(${appended}) WITH ORDINALITY AS t(elem, ord)
+    WHERE ord > jsonb_array_length(${appended}) - ${CHECK_LOG_MAX_ENTRIES}
+  )`;
+};
 
 const partialDomainTable = {
   id: domains.id,
@@ -75,21 +79,44 @@ export const getDomainById = async (
   }
 };
 
-/** All rows for a name, across users — the same name can be claimed by many. */
-export const getDomainsByName = async (
+/** The caller's own row for a name, if any (unique on userId + name). */
+export const getDomainByNameAndUserId = async (
   name: string,
-): Promise<PartialDomain[]> => {
+  userId: string,
+): Promise<PartialDomain | null> => {
   try {
     const result = await db
       .select(partialDomainTable)
       .from(domains)
-      .where(eq(domains.name, name))
+      .where(and(eq(domains.name, name), eq(domains.userId, userId)))
+      .limit(1)
       .execute();
-    return result;
+    return result[0] || null;
   } catch (error) {
     throw new ApiError({
-      code: "db/get_domains_by_name_failed",
-      message: "Failed to get domains by name",
+      code: "db/get_domain_by_name_and_user_id_failed",
+      message: "Failed to get domain by name and user id",
+      cause: error,
+    });
+  }
+};
+
+/** Whether anyone has a verified copy of this name — O(1) existence check. */
+export const hasVerifiedDomainByName = async (
+  name: string,
+): Promise<boolean> => {
+  try {
+    const result = await db
+      .select({ id: domains.id })
+      .from(domains)
+      .where(and(eq(domains.name, name), eq(domains.status, "verified")))
+      .limit(1)
+      .execute();
+    return result.length > 0;
+  } catch (error) {
+    throw new ApiError({
+      code: "db/has_verified_domain_by_name_failed",
+      message: "Failed to check for a verified domain by name",
       cause: error,
     });
   }
@@ -177,17 +204,21 @@ export type DomainUpdate = Partial<
     | "verifiedAt"
     | "gracePeriodStartedAt"
     | "gracePeriodWarningSentAt"
-    | "checkLog"
   >
->;
+> & { appendCheckLog?: CheckLogEntry[] };
 export const updateDomain = async (
   id: string,
-  updates: DomainUpdate,
+  { appendCheckLog, ...updates }: DomainUpdate,
 ): Promise<PartialDomain | null> => {
   try {
     const result = await db
       .update(domains)
-      .set(updates)
+      .set({
+        ...updates,
+        ...(appendCheckLog?.length
+          ? { checkLog: appendCheckLogSql(appendCheckLog) }
+          : {}),
+      })
       .where(eq(domains.id, id))
       .returning(partialDomainTable)
       .execute();
@@ -214,9 +245,6 @@ export const rotateDomainKeys = async (
     keys.privateKey,
     env.encryptionKey,
   );
-  const rotatedEntry: CheckLogEntry[] = [
-    { status: "rotated", checkedAt: Date.now() },
-  ];
   try {
     const result = await db
       .update(domains)
@@ -225,7 +253,9 @@ export const rotateDomainKeys = async (
         publicKey: keys.publicKey,
         privateKeyEncrypted,
         // jsonb concat: logged atomically with the rotation itself.
-        checkLog: sql`${domains.checkLog} || ${JSON.stringify(rotatedEntry)}::jsonb`,
+        checkLog: appendCheckLogSql([
+          { status: "rotated", checkedAt: Date.now() },
+        ]),
       })
       .where(eq(domains.id, id))
       .returning(partialDomainTable)
