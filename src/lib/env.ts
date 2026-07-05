@@ -20,6 +20,12 @@ const EnvSchema = z.object({
   gracePeriodWarningMs: ms.default(60 * MINUTE_IN_MS),
   verificationWindowMs: ms.default(2 * DAY_IN_MS),
   notificationsFrom: z.string().default("Resend <notifications@jlort.com>"),
+
+  // Test-only DNS mocking (see src/domain/dns.ts). Never set in production.
+  enableMock: z
+    .string()
+    .optional()
+    .transform((v) => v === "true" || v === "1"),
 });
 export const env = EnvSchema.parse({
   authSecret: process.env.AUTH_SECRET,
@@ -34,4 +40,5 @@ export const env = EnvSchema.parse({
   gracePeriodWarningMs: process.env.GRACE_PERIOD_WARNING_MS,
   verificationWindowMs: process.env.VERIFICATION_WINDOW_MS,
   notificationsFrom: process.env.NOTIFICATIONS_FROM,
+  enableMock: process.env.ENABLE_MOCK,
 });

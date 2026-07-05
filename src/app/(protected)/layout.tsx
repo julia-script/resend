@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { type PropsWithChildren, Suspense } from "react";
 import { UserMenu } from "@/components/auth/UserMenu";
+import { env } from "@/lib/env";
 
 export default async function ProtectedLayout({ children }: PropsWithChildren) {
   return (
@@ -11,6 +12,14 @@ export default async function ProtectedLayout({ children }: PropsWithChildren) {
             resend<span className="text-accent-foreground">.</span>
           </Link>
           <div className="flex items-center gap-4">
+            {env.enableMock && (
+              <Link
+                href="/mocks"
+                className="text-sm text-muted transition-colors hover:text-foreground"
+              >
+                Mocks
+              </Link>
+            )}
             <a
               href="/api/reference"
               className="text-sm text-muted transition-colors hover:text-foreground"
