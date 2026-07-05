@@ -64,9 +64,19 @@ export const useCreateDomain = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateDomainInput) =>
-      api("/api/domains", { method: "POST", body: data }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: domainsQueryOptions.queryKey }),
+      api("/api/domains", {
+        method: "POST",
+        body: data,
+        schema: DomainResponseSchema,
+      }),
+    onSuccess: (fresh) => {
+      // Seed the detail query so a post-create redirect renders instantly.
+      queryClient.setQueryData(
+        domainQueryOptions(fresh.data.id).queryKey,
+        fresh,
+      );
+      queryClient.invalidateQueries({ queryKey: domainsQueryOptions.queryKey });
+    },
   });
 };
 

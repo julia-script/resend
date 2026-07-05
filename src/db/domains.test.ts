@@ -3,7 +3,12 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import type { CheckLogEntry } from "@/shared/domain";
 import { db } from "./client";
-import { deleteDomain, insertDomain, updateDomain } from "./domains";
+import {
+  deleteDomain,
+  getDomainById,
+  insertDomain,
+  updateDomain,
+} from "./domains";
 import { users } from "./schema";
 
 // Integration tests against the local Postgres from docker-compose: the
@@ -59,6 +64,12 @@ test("sequential appends both land and the cap holds", async () => {
     checkedAt: 2,
   });
   expect(capped?.checkLog?.at(-1)).toEqual({ status: "ok", checkedAt: 198 });
+});
+
+// /domains/<typo> must 404, not 500: a non-uuid id short-circuits to null
+// before Postgres gets to choke on the uuid cast.
+test("malformed domain id returns null instead of throwing", async () => {
+  await expect(getDomainById("mocks")).resolves.toBeNull();
 });
 
 test("update without appendCheckLog leaves the log untouched", async () => {

@@ -60,9 +60,15 @@ export const getDomainsByUserId = async (
   }
 };
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const getDomainById = async (
   id: string,
 ): Promise<PartialDomain | null> => {
+  // A malformed id can't match any row; querying would make Postgres
+  // throw on the uuid cast (e.g. /domains/mocks typed into the URL).
+  if (!UUID_RE.test(id)) return null;
   try {
     const result = await db
       .select(partialDomainTable)

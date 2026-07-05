@@ -1,15 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { isNameTakenError, useCreateDomain, useDomains } from "@/hooks/domains";
 import { strings } from "@/lib/strings";
-import { dkimRecordName } from "@/shared/domain";
 import { StatusBadge } from "./StatusBadge";
 
 const CreateDomain = () => {
   const [name, setName] = useState("");
+  const router = useRouter();
   const mutation = useCreateDomain();
+  const openDomain = (res: { data: { id: string } }) => {
+    setName("");
+    router.push(`/domains/${res.data.id}`);
+  };
   // The exact name the 409 was for, so confirming claims what was submitted.
   const takenName = isNameTakenError(mutation.error)
     ? mutation.variables?.name
@@ -23,7 +28,7 @@ const CreateDomain = () => {
           if (name.trim())
             mutation.mutate(
               { name: name.trim(), enforce: false },
-              { onSuccess: () => setName("") },
+              { onSuccess: openDomain },
             );
         }}
       >
@@ -55,7 +60,7 @@ const CreateDomain = () => {
             onClick={() =>
               mutation.mutate(
                 { name: takenName, enforce: true },
-                { onSuccess: () => setName("") },
+                { onSuccess: openDomain },
               )
             }
             className="mt-2 rounded-md bg-peach-foreground px-2 py-1 font-medium text-peach transition-opacity hover:opacity-80 disabled:opacity-50"
@@ -118,9 +123,6 @@ export const Domains = () => {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
                       {domain.name}
-                    </p>
-                    <p className="mt-0.5 truncate font-mono text-xs text-muted">
-                      {dkimRecordName(domain)}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">

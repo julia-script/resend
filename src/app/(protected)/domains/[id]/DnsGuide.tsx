@@ -9,22 +9,41 @@ export const DnsGuide = ({ provider }: { provider?: string }) => {
         {strings.domainPage.guideTitle}
       </summary>
       {provider && (
-        <p className="mt-3 text-sm text-foreground">
-          {strings.dnsProviders.intro(provider)}
+        <div className="mt-3">
+          <p className="flex items-center gap-2 text-sm text-foreground">
+            {hint && (
+              // biome-ignore lint/performance/noImgElement: tiny bundled SVG, no image pipeline needed
+              <img
+                src={hint.logo}
+                alt=""
+                width={20}
+                height={20}
+                className="h-5 w-5 shrink-0 object-contain"
+              />
+            )}
+            {strings.dnsProviders.intro(provider)}
+          </p>
           {hint && (
-            <>
-              {" "}
+            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
               <a
-                href={hint.dashboard}
+                href={hint.dnsPage}
                 target="_blank"
                 rel="noreferrer"
                 className="underline hover:text-accent-foreground"
               >
-                {strings.dnsProviders.dashboardLink(provider)}
+                {strings.dnsProviders.dnsPageLink}
               </a>
-            </>
+              <a
+                href={hint.article}
+                target="_blank"
+                rel="noreferrer"
+                className="underline hover:text-accent-foreground"
+              >
+                {strings.dnsProviders.articleLink(provider)}
+              </a>
+            </p>
           )}
-        </p>
+        </div>
       )}
       <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-muted">
         <li>

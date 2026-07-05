@@ -86,29 +86,101 @@ export const strings = {
   dnsProviders: {
     intro: (provider: string) =>
       `Looks like your DNS is managed by ${provider}.`,
-    dashboardLink: (provider: string) => `Open your ${provider} DNS settings`,
+    dnsPageLink: "Open your DNS records ↗",
+    articleLink: (provider: string) =>
+      `How to add a TXT record on ${provider} ↗`,
+    // Keys must match the provider names emitted by detectprovider.ts
+    // (guarded by a unit test). `dnsPage` is the deepest link that works
+    // for everyone; `article` is the provider's official how-to.
     guide: {
       Cloudflare: {
         nameHint:
           "Cloudflare adds “.yourdomain.com” for you — paste only the part of the Name before your domain.",
-        dashboard: "https://dash.cloudflare.com",
+        article:
+          "https://developers.cloudflare.com/dns/manage-dns-records/how-to/create-dns-records/",
+        dnsPage: "https://dash.cloudflare.com/?to=/:account/:zone/dns/records",
+        logo: "/providers/cloudflare.svg",
       },
       GoDaddy: {
         nameHint:
           "GoDaddy adds your domain to the Name automatically — paste only the part before it.",
-        dashboard: "https://dcc.godaddy.com/domains",
+        article: "https://www.godaddy.com/help/add-a-txt-record-19232",
+        dnsPage: "https://dcc.godaddy.com/domains",
+        logo: "/providers/godaddy.svg",
       },
       Namecheap: {
         nameHint:
           "In Namecheap the Name field is called “Host”, and it adds your domain for you — paste only the part before it.",
-        dashboard: "https://ap.www.namecheap.com/domains/list/",
+        article:
+          "https://www.namecheap.com/support/knowledgebase/article.aspx/317/2237/how-do-i-add-txtspfdkimdmarc-records-for-my-domain/",
+        dnsPage: "https://ap.www.namecheap.com/domains/list/",
+        logo: "/providers/namecheap.svg",
       },
       AWS: {
         nameHint:
           "Route 53 wants the full record name exactly as shown above, including your domain.",
-        dashboard: "https://console.aws.amazon.com/route53/",
+        article:
+          "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-creating.html",
+        dnsPage: "https://console.aws.amazon.com/route53/v2/hostedzones",
+        logo: "/providers/aws.svg",
       },
-    } as Record<string, { nameHint: string; dashboard: string } | undefined>,
+      Google: {
+        article: "https://cloud.google.com/dns/docs/records",
+        dnsPage: "https://console.cloud.google.com/net-services/dns/zones",
+        logo: "/providers/google.svg",
+      },
+      Azure: {
+        article:
+          "https://learn.microsoft.com/en-us/azure/dns/dns-operations-recordsets-portal",
+        dnsPage:
+          "https://portal.azure.com/#browse/Microsoft.Network%2FdnsZones",
+        logo: "/providers/azure.svg",
+      },
+      DigitalOcean: {
+        article:
+          "https://docs.digitalocean.com/products/networking/dns/how-to/manage-records/",
+        dnsPage: "https://cloud.digitalocean.com/networking/domains",
+        logo: "/providers/digitalocean.svg",
+      },
+      Bluehost: {
+        article:
+          "https://www.bluehost.com/help/article/dm-guide-to-the-dns-tab-in-the-account-manager",
+        dnsPage: "https://my.bluehost.com",
+        logo: "/providers/bluehost.svg",
+      },
+      HostGator: {
+        article: "https://www.hostgator.com/help/article/changing-dns-records",
+        dnsPage: "https://portal.hostgator.com",
+        logo: "/providers/hostgator.svg",
+      },
+      DreamHost: {
+        article:
+          "https://help.dreamhost.com/hc/en-us/articles/360035516812-Adding-custom-DNS-records",
+        dnsPage: "https://panel.dreamhost.com",
+        logo: "/providers/dreamhost.svg",
+      },
+      Squarespace: {
+        article:
+          "https://support.squarespace.com/hc/en-us/articles/360002101888",
+        dnsPage: "https://account.squarespace.com/domains",
+        logo: "/providers/squarespace.svg",
+      },
+      Wix: {
+        article:
+          "https://support.wix.com/en/article/adding-or-updating-txt-records-in-your-wix-account",
+        dnsPage: "https://manage.wix.com/account/domains",
+        logo: "/providers/wix.svg",
+      },
+      Vercel: {
+        article: "https://vercel.com/docs/domains/managing-dns-records",
+        dnsPage: "https://vercel.com/dashboard/domains",
+        logo: "/providers/vercel.svg",
+      },
+    } as Record<
+      string,
+      | { nameHint?: string; article: string; dnsPage: string; logo: string }
+      | undefined
+    >,
   },
 
   domainList: {
