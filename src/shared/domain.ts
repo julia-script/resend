@@ -8,8 +8,6 @@ export const domainStatusValues = [
   "in_progress",
   "verified",
   "failed",
-  // "expired",
-  // "canceled",
 ] as const;
 
 export const domainStatusReasonValues = [
@@ -17,15 +15,9 @@ export const domainStatusReasonValues = [
   "canceled",
   "superseded",
   "grace_period_expired",
-  // "key_mismatch",
-  // "record_not_found",
-  // "domain_not_found",
-
-  // "window_expired",
-  // "revoked_after_grace",
 ] as const;
 
-export const CheckLogEntrySchema = z.union([
+const CheckLogEntrySchema = z.union([
   z.object({
     status: z.literal("ok"),
     checkedAt: z.number(),

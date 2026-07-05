@@ -24,7 +24,7 @@ export const generateDkimKeys = async () => {
 const isDomainValid = (name: string) => {
   return tldts.getDomain(name) !== null;
 };
-export const resolveDkim = async (selector: string, domain: string) => {
+const resolveDkim = async (selector: string, domain: string) => {
   if (!isDomainValid(domain)) {
     throw new ApiError({
       code: "dkim/invalid_domain",

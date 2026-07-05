@@ -19,7 +19,8 @@ import {
   users,
   verificationTokens,
 } from "@/db/schema";
-export type Awaitable<T> = T | PromiseLike<T>;
+
+type Awaitable<T> = T | PromiseLike<T>;
 export const DrizzleAdapter: Adapter = {
   async createUser(data: AdapterUser) {
     const { id, ...insertData } = data;

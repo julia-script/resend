@@ -14,11 +14,9 @@
     "db:studio": "pnpm drizzle-kit studio"
   },
   "dependencies": {
-    "@auth/drizzle-adapter": "^1.11.2",
     "@tanstack/react-query": "^5.101.2",
     "@tanstack/react-query-devtools": "^5.101.2",
     "@types/lodash-es": "^4.17.12",
-    "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
     "lodash-es": "^4.18.1",
     "next": "16.2.10",
@@ -42,6 +40,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.3",
     "babel-plugin-react-compiler": "1.0.0",
+    "drizzle-kit": "^0.31.10",
     "hono": "^4.12.27",
     "tailwindcss": "^4",
     "tsx": "^4.23.0",

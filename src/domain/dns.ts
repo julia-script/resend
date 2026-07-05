@@ -3,7 +3,7 @@ import { ApiError } from "@/lib/errors";
 import { get } from "lodash-es";
 import dns from "node:dns/promises";
 
-export const wrapDns = async <A>(
+const wrapDns = async <A>(
   fn: () => Promise<A>,
 ): Promise<
   | {

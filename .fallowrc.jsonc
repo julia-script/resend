@@ -1,0 +1,6 @@
+{
+  "ignoreDependencies": [
+    // Loaded dynamically by drizzle-orm/postgres-js; fallow can't see it.
+    "postgres"
+  ]
+}

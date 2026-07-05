@@ -1,7 +1,7 @@
 import "server-only";
 import { createRoute, type RouteHandler, z } from "@hono/zod-openapi";
 import { rotateDomainKeys, updateDomain } from "@/db/domains";
-import { getOwnedDomain } from "./shared";
+import { domainNotFound, getOwnedDomain } from "./shared";
 import { DomainResponseSchema } from "@/shared/api";
 import * as Dkim from "@/domain/dkim";
 import { dispatchNotifications } from "@/domain/notifications";
@@ -47,12 +47,7 @@ export const verifyDomainHandler: RouteHandler<
   const session = c.get("session");
   const { id } = c.req.valid("param");
   let domain = await getOwnedDomain(session, id);
-  if (!domain) {
-    return c.json(
-      { code: "domains/not_found", message: "Domain not found" },
-      404,
-    );
-  }
+  if (!domain) return domainNotFound(c);
 
   const now = new Date();
   const action = verifyAction(domain);

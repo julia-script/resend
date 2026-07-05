@@ -18,7 +18,7 @@ import { CheckLogEntry, PartialDomain } from "@/shared/domain";
 //   "name" | "userId" | "publicKey"
 // > & { privateKey: string };
 
-export const partialDomainTable = {
+const partialDomainTable = {
   id: domains.id,
   name: domains.name,
   userId: domains.userId,

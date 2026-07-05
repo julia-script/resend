@@ -17,7 +17,7 @@ import { useSession } from "./session";
 export const isInGrace = (domain: PartialDomain) =>
   domain.status === "verified" && domain.gracePeriodStartedAt !== null;
 
-export const domainsQueryOptions = queryOptions({
+const domainsQueryOptions = queryOptions({
   queryKey: ["domains"],
   queryFn: () => api("/api/domains", { schema: DomainListResponseSchema }),
 });
@@ -27,7 +27,7 @@ export const useDomains = () => {
   return useQuery({ ...domainsQueryOptions, enabled: !!session });
 };
 
-export const domainQueryOptions = (id: string) =>
+const domainQueryOptions = (id: string) =>
   queryOptions({
     queryKey: ["domains", id],
     queryFn: () => api(`/api/domains/${id}`, { schema: DomainResponseSchema }),

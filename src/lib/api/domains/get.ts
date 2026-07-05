@@ -1,6 +1,6 @@
 import "server-only";
 import { createRoute, type RouteHandler, z } from "@hono/zod-openapi";
-import { getOwnedDomain } from "./shared";
+import { domainNotFound, getOwnedDomain } from "./shared";
 import { DomainResponseSchema } from "@/shared/api";
 import { ApiErrorSchema } from "@/lib/errors";
 import type { Env } from "../setup";
@@ -41,11 +41,6 @@ export const getDomainHandler: RouteHandler<
   const session = c.get("session");
   const { id } = c.req.valid("param");
   const domain = await getOwnedDomain(session, id);
-  if (!domain) {
-    return c.json(
-      { code: "domains/not_found", message: "Domain not found" },
-      404,
-    );
-  }
+  if (!domain) return domainNotFound(c);
   return c.json({ data: domain }, 200);
 };

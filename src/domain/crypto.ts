@@ -47,6 +47,9 @@ export const encryptPrivateKey = (
     .join(":");
 };
 
+// Unused until real sending ships, but it's the only way to read the
+// privateKeyEncrypted column — the counterpart of encryptPrivateKey.
+// fallow-ignore-next-line unused-export
 export const decryptPrivateKey = (
   payload: string,
   encryptionKeyHex: string,
