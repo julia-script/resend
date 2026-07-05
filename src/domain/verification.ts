@@ -4,13 +4,13 @@ import {
   getVerifiedDomainsByName,
   updateDomain,
 } from "@/db/domains";
-import type { CheckLogEntry, PartialDomain } from "@/shared/domain";
-import type { ApiError } from "@/lib/errors";
 import { env } from "@/lib/env";
-import * as Dkim from "./dkim";
-import type { CheckDkimResult } from "./dkim";
-import type { Notification } from "./notifications";
+import type { ApiError } from "@/lib/errors";
+import type { CheckLogEntry, PartialDomain } from "@/shared/domain";
 import type { RequiredBy } from "@/shared/types";
+import type { CheckDkimResult } from "./dkim";
+import * as Dkim from "./dkim";
+import type { Notification } from "./notifications";
 
 // ponytail: unbounded jsonb growth otherwise; raise if the log needs history.
 const CHECK_LOG_MAX_ENTRIES = 100;
@@ -172,7 +172,10 @@ export const transition = (
       }
 
       // Still inside the grace period; warn once past the warning threshold.
-      const warnAt = addMs(domain.gracePeriodStartedAt, env.gracePeriodWarningMs);
+      const warnAt = addMs(
+        domain.gracePeriodStartedAt,
+        env.gracePeriodWarningMs,
+      );
       const shouldWarn =
         isPast(warnAt, now) && domain.gracePeriodWarningSentAt === null;
       return {

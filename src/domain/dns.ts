@@ -1,7 +1,7 @@
 import "server-only";
-import { ApiError } from "@/lib/errors";
-import { get } from "lodash-es";
 import dns from "node:dns/promises";
+import { get } from "lodash-es";
+import { ApiError } from "@/lib/errors";
 
 const wrapDns = async <A>(
   fn: () => Promise<A>,

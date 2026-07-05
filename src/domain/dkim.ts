@@ -1,9 +1,9 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { generateRsaKeyPair } from "./crypto";
 import * as tldts from "tldts";
 import { ApiError, type Result } from "@/lib/errors";
 import { dkimRecordName } from "@/shared/domain";
+import { generateRsaKeyPair } from "./crypto";
 import { resolveTxt } from "./dns";
 
 const DKIM_MODULUS_LENGTH = 1024;
@@ -50,9 +50,7 @@ const resolveDkim = async (selector: string, domain: string) => {
     });
   }
   throw result.error;
-
 };
-
 
 export type CheckDkimResult = Result<string, ApiError>;
 export const checkDkim = async (options: {
@@ -65,7 +63,9 @@ export const checkDkim = async (options: {
     // Compare the p= tag only: providers may reorder/drop v= and k= tags.
     const match = records
       .map((chunks) => chunks.join(""))
-      .find((record) => record.match(/p=([^;\s"]+)/)?.[1] === options.publicKey);
+      .find(
+        (record) => record.match(/p=([^;\s"]+)/)?.[1] === options.publicKey,
+      );
     if (match) {
       return { type: "success", value: match };
     }
@@ -91,7 +91,7 @@ export const checkDkim = async (options: {
   }
 };
 
-export const normalizeDomainName = (name: string)=>{
+export const normalizeDomainName = (name: string) => {
   const trimmed = name.trim().toLowerCase().replace(/\.$/, "");
   if (trimmed === "") {
     throw new ApiError({

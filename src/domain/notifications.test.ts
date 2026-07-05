@@ -7,7 +7,8 @@ const { batchSendMock, getUserEmailsMock } = vi.hoisted(() => ({
     error: null,
   })),
   getUserEmailsMock: vi.fn(
-    async (ids: string[]) => new Map(ids.map((id) => [id, `${id}@example.com`])),
+    async (ids: string[]) =>
+      new Map(ids.map((id) => [id, `${id}@example.com`])),
   ),
 }));
 
@@ -21,7 +22,12 @@ vi.mock("@/db/users", () => ({ getUserEmails: getUserEmailsMock }));
 import { dispatchNotifications } from "./notifications";
 
 const makeDomain = (overrides: Partial<PartialDomain>) =>
-  ({ id: "d1", name: "example.com", userId: "u1", ...overrides }) as PartialDomain;
+  ({
+    id: "d1",
+    name: "example.com",
+    userId: "u1",
+    ...overrides,
+  }) as PartialDomain;
 const domain = makeDomain({});
 
 beforeEach(() => {

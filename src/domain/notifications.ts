@@ -1,9 +1,9 @@
 import "server-only";
 import { chunk, compact, uniq } from "lodash-es";
 import { Resend } from "resend";
-import type { PartialDomain } from "@/shared/domain";
 import { getUserEmails } from "@/db/users";
 import { env } from "@/lib/env";
+import type { PartialDomain } from "@/shared/domain";
 import type { VerificationEvent } from "./verification";
 
 const resend = new Resend(env.authResendKey);

@@ -1,5 +1,5 @@
-import type { PartialDomain } from "@/shared/domain";
 import { strings } from "@/lib/strings";
+import type { PartialDomain } from "@/shared/domain";
 
 const statusClassNames: Record<PartialDomain["status"], string> = {
   not_started: "bg-border text-muted",

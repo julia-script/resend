@@ -1,7 +1,6 @@
 import { Domains } from "@/components/Domains";
 import { auth } from "@/lib/auth/handlers";
 
-
 export default async function Home() {
   const session = await auth();
   const firstName = session?.user?.name?.split(" ")[0] ?? "there";

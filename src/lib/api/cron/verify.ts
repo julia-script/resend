@@ -1,11 +1,11 @@
 import "server-only";
 import { createRoute, type RouteHandler } from "@hono/zod-openapi";
-import { CronSweepResponseSchema } from "@/shared/api";
 import { getDomainsDueForCheck } from "@/db/domains";
 import { dispatchNotifications } from "@/domain/notifications";
 import { verifyDomain } from "@/domain/verification";
 import { env } from "@/lib/env";
 import { ApiErrorSchema } from "@/lib/errors";
+import { CronSweepResponseSchema } from "@/shared/api";
 import type { Env } from "../setup";
 
 export const cronVerifyRoute = createRoute({
@@ -50,16 +50,21 @@ export const cronVerifyHandler: RouteHandler<
     domains.map((domain) => verifyDomain(domain, now)),
   );
   const fulfilled = results.filter(
-    (r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof verifyDomain>>> =>
+    (
+      r,
+    ): r is PromiseFulfilledResult<Awaited<ReturnType<typeof verifyDomain>>> =>
       r.status === "fulfilled",
   );
   for (const r of results) {
-    if (r.status === "rejected") console.error("cron: domain check failed", r.reason);
+    if (r.status === "rejected")
+      console.error("cron: domain check failed", r.reason);
   }
 
   try {
     // One batched send for the whole sweep (Resend rate-limits individual sends).
-    await dispatchNotifications(fulfilled.flatMap((r) => r.value.notifications));
+    await dispatchNotifications(
+      fulfilled.flatMap((r) => r.value.notifications),
+    );
   } catch (error) {
     // State is already persisted; losing emails must not fail the tick.
     console.error("cron: notification dispatch failed", error);

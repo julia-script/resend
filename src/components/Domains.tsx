@@ -39,7 +39,9 @@ const CreateDomain = () => {
           disabled={mutation.isPending || !name.trim()}
           className="shrink-0 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-80 disabled:opacity-50"
         >
-          {mutation.isPending ? strings.domainList.adding : strings.domainList.add}
+          {mutation.isPending
+            ? strings.domainList.adding
+            : strings.domainList.add}
         </button>
       </form>
       {takenName ? (
@@ -58,7 +60,9 @@ const CreateDomain = () => {
             }
             className="mt-2 rounded-md bg-peach-foreground px-2 py-1 font-medium text-peach transition-opacity hover:opacity-80 disabled:opacity-50"
           >
-            {mutation.isPending ? strings.domainList.claiming : strings.domainList.claim}
+            {mutation.isPending
+              ? strings.domainList.claiming
+              : strings.domainList.claim}
           </button>
         </div>
       ) : (
@@ -92,16 +96,16 @@ export const Domains = () => {
         <CreateDomain />
       </div>
       <div className="mt-4">
-        {isPending && <p className="text-sm text-muted">{strings.domainList.loading}</p>}
+        {isPending && (
+          <p className="text-sm text-muted">{strings.domainList.loading}</p>
+        )}
         {error && (
           <p className="text-sm text-peach-foreground">
             {strings.domainList.loadError}
           </p>
         )}
         {domains?.length === 0 && (
-          <p className="text-sm text-muted">
-            {strings.domainList.empty}
-          </p>
+          <p className="text-sm text-muted">{strings.domainList.empty}</p>
         )}
         {domains && domains.length > 0 && (
           <ul className="divide-y divide-border">

@@ -10,7 +10,7 @@ import { ApiError } from "@/lib/errors";
 
 export const generateRsaKeyPair = promisify(generateKeyPairCrypto);
 
-const DKIM_MODULUS_LENGTH = 1024;
+const _DKIM_MODULUS_LENGTH = 1024;
 
 const IV_BYTES = 12;
 

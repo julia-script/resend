@@ -3,12 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
-import {
-  type CheckLogEntry,
-  dkimRecordName,
-  dkimRecordValue,
-  type PartialDomain,
-} from "@/shared/domain";
+import { StatusBadge } from "@/components/StatusBadge";
+import type { VerifyAction } from "@/domain/verification";
 import {
   isInGrace,
   useDeleteDomain,
@@ -16,8 +12,12 @@ import {
   useVerifyDomain,
 } from "@/hooks/domains";
 import { strings } from "@/lib/strings";
-import { StatusBadge } from "@/components/StatusBadge";
-import type { VerifyAction } from "@/domain/verification";
+import {
+  type CheckLogEntry,
+  dkimRecordName,
+  dkimRecordValue,
+  type PartialDomain,
+} from "@/shared/domain";
 
 const CopyButton = ({ value }: { value: string }) => {
   const [copied, setCopied] = useState(false);
@@ -78,14 +78,20 @@ const CheckHistory = ({ log }: { log: CheckLogEntry[] }) => {
   if (recent.length === 0) return null;
   return (
     <div className="mt-8 rounded-xl border border-border bg-surface p-5 shadow-soft">
-      <h2 className="text-sm font-semibold">{strings.domainPage.historyTitle}</h2>
+      <h2 className="text-sm font-semibold">
+        {strings.domainPage.historyTitle}
+      </h2>
       <ul className="mt-3 space-y-2">
         {recent.map((entry) => (
           <li
             key={entry.checkedAt}
             className="flex items-center justify-between gap-4 text-sm"
           >
-            <span className={entry.status === "ok" ? "text-mint-foreground" : "text-muted"}>
+            <span
+              className={
+                entry.status === "ok" ? "text-mint-foreground" : "text-muted"
+              }
+            >
               {entry.status === "ok" ? "✓" : "•"} {logEntryLabel(entry)}
             </span>
             <span className="shrink-0 text-xs text-muted">
@@ -105,12 +111,12 @@ const DnsGuide = () => (
     </summary>
     <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-muted">
       <li>
-        Log in to wherever your domain lives — usually the company you pay
-        about $12/year (GoDaddy, Namecheap, Cloudflare, and friends).
+        Log in to wherever your domain lives — usually the company you pay about
+        $12/year (GoDaddy, Namecheap, Cloudflare, and friends).
       </li>
       <li>
-        Find the DNS settings. It hides under names like “DNS management”,
-        “Zone editor”, or “Advanced DNS”. Companies love renaming this page.
+        Find the DNS settings. It hides under names like “DNS management”, “Zone
+        editor”, or “Advanced DNS”. Companies love renaming this page.
       </li>
       <li>
         Add a new record and set its type to <strong>TXT</strong>.
@@ -128,8 +134,8 @@ const DnsGuide = () => (
       <li>Leave TTL on the default and save.</li>
       <li>
         Wait. DNS updates travel at the speed of bureaucracy — usually a few
-        minutes, occasionally an hour. We re-check every minute, so you can
-        just leave this page open.
+        minutes, occasionally an hour. We re-check every minute, so you can just
+        leave this page open.
       </li>
     </ol>
   </details>
@@ -154,7 +160,8 @@ export default function DomainPage({
     remove.mutate(undefined, { onSuccess: () => router.push("/") });
   };
 
-  const showVerifyButton = domain && (domain.status !== "verified" || isInGrace(domain));
+  const showVerifyButton =
+    domain && (domain.status !== "verified" || isInGrace(domain));
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12">

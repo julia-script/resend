@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import type { PartialDomain } from "@/shared/domain";
-import { ApiError } from "@/lib/errors";
 import { env } from "@/lib/env";
+import { ApiError } from "@/lib/errors";
+import type { PartialDomain } from "@/shared/domain";
 import type { CheckDkimResult } from "./dkim";
 import { isCheckThrottled, transition, verifyAction } from "./verification";
 
@@ -60,7 +60,11 @@ describe("in_progress", () => {
       status: "in_progress",
       nextCheckAt: new Date(NOW.getTime() + PENDING_RECHECK_INTERVAL),
       checkLog: [
-        { status: "failed", reason: "record_not_found", checkedAt: NOW.getTime() },
+        {
+          status: "failed",
+          reason: "record_not_found",
+          checkedAt: NOW.getTime(),
+        },
       ],
     });
     expect(t?.events).toBeUndefined();
@@ -145,7 +149,11 @@ describe("verified", () => {
 
   test("failure inside grace period before warning threshold → no event, start unchanged", () => {
     const start = new Date(NOW.getTime() - minutes(5));
-    const t = transition(verified({ gracePeriodStartedAt: start }), fail(), NOW);
+    const t = transition(
+      verified({ gracePeriodStartedAt: start }),
+      fail(),
+      NOW,
+    );
     expect(t?.update).toMatchObject({
       status: "verified",
       gracePeriodStartedAt: start,
@@ -156,7 +164,11 @@ describe("verified", () => {
 
   test("failure past warning threshold → warns once and records it", () => {
     const start = new Date(NOW.getTime() - GRACE_PERIOD_WARNING - minutes(1));
-    const t = transition(verified({ gracePeriodStartedAt: start }), fail(), NOW);
+    const t = transition(
+      verified({ gracePeriodStartedAt: start }),
+      fail(),
+      NOW,
+    );
     expect(t?.update).toMatchObject({
       gracePeriodStartedAt: start, // must NOT reset, or the grace period never ends
       gracePeriodWarningSentAt: NOW,
@@ -168,7 +180,10 @@ describe("verified", () => {
     const start = new Date(NOW.getTime() - GRACE_PERIOD_WARNING - minutes(1));
     const sentAt = new Date(NOW.getTime() - minutes(1));
     const t = transition(
-      verified({ gracePeriodStartedAt: start, gracePeriodWarningSentAt: sentAt }),
+      verified({
+        gracePeriodStartedAt: start,
+        gracePeriodWarningSentAt: sentAt,
+      }),
       fail(),
       NOW,
     );
@@ -178,7 +193,11 @@ describe("verified", () => {
 
   test("failure past grace period → failed/grace_period_expired, notifies", () => {
     const start = new Date(NOW.getTime() - GRACE_PERIOD - minutes(1));
-    const t = transition(verified({ gracePeriodStartedAt: start }), fail(), NOW);
+    const t = transition(
+      verified({ gracePeriodStartedAt: start }),
+      fail(),
+      NOW,
+    );
     expect(t?.update).toMatchObject({
       status: "failed",
       statusReason: "grace_period_expired",
@@ -220,7 +239,9 @@ describe("verifyAction", () => {
 
   test("failed/superseded → rotate keys first", () => {
     expect(
-      verifyAction(makeDomain({ status: "failed", statusReason: "superseded" })),
+      verifyAction(
+        makeDomain({ status: "failed", statusReason: "superseded" }),
+      ),
     ).toBe("rotate");
   });
 });
@@ -255,8 +276,12 @@ describe("isCheckThrottled", () => {
 
 describe("terminal statuses", () => {
   test("not_started and failed don't transition", () => {
-    expect(transition(makeDomain({ status: "not_started" }), ok, NOW)).toBeNull();
-    expect(transition(makeDomain({ status: "failed" }), fail(), NOW)).toBeNull();
+    expect(
+      transition(makeDomain({ status: "not_started" }), ok, NOW),
+    ).toBeNull();
+    expect(
+      transition(makeDomain({ status: "failed" }), fail(), NOW),
+    ).toBeNull();
   });
 });
 

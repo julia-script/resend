@@ -1,5 +1,5 @@
-import type { CheckLogEntry, PartialDomain } from "@/shared/domain";
 import type { VerifyAction } from "@/domain/verification";
+import type { CheckLogEntry, PartialDomain } from "@/shared/domain";
 
 type Status = PartialDomain["status"];
 type StatusReason = NonNullable<PartialDomain["statusReason"]>;
@@ -66,7 +66,8 @@ export const strings = {
     loading: "Loading domain…",
     notFound: "Domain not found, or you don’t have access to it.",
     dnsCardTitle: "DNS record",
-    dnsCardIntro: "Add this TXT record to your DNS provider to verify the domain.",
+    dnsCardIntro:
+      "Add this TXT record to your DNS provider to verify the domain.",
     nameLabel: "Name",
     valueLabel: "Value",
     guideTitle: "First time editing DNS? No shame — everyone googles this.",

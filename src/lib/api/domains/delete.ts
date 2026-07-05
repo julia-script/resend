@@ -1,10 +1,10 @@
 import "server-only";
 import { createRoute, type RouteHandler, z } from "@hono/zod-openapi";
-import { DeleteDomainResponseSchema } from "@/shared/api";
 import { deleteDomain } from "@/db/domains";
-import { domainNotFound, getOwnedDomain } from "./shared";
 import { ApiErrorSchema } from "@/lib/errors";
+import { DeleteDomainResponseSchema } from "@/shared/api";
 import type { Env } from "../setup";
+import { domainNotFound, getOwnedDomain } from "./shared";
 
 export const deleteDomainRoute = createRoute({
   method: "delete",

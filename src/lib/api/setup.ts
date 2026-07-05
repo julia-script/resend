@@ -3,14 +3,14 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
 import { createMiddleware } from "hono/factory";
 import type { Session } from "next-auth";
-import { auth } from "../auth/handlers";
 import { ApiError } from "@/lib/errors";
-import { listDomainsHandler, listDomainsRoute } from "./domains/list";
-import { createDomainHandler, createDomainRoute } from "./domains/create";
-import { getDomainHandler, getDomainRoute } from "./domains/get";
-import { verifyDomainHandler, verifyDomainRoute } from "./domains/verify";
-import { deleteDomainHandler, deleteDomainRoute } from "./domains/delete";
+import { auth } from "../auth/handlers";
 import { cronVerifyHandler, cronVerifyRoute } from "./cron/verify";
+import { createDomainHandler, createDomainRoute } from "./domains/create";
+import { deleteDomainHandler, deleteDomainRoute } from "./domains/delete";
+import { getDomainHandler, getDomainRoute } from "./domains/get";
+import { listDomainsHandler, listDomainsRoute } from "./domains/list";
+import { verifyDomainHandler, verifyDomainRoute } from "./domains/verify";
 
 export type Env = {
   Variables: {

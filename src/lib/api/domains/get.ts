@@ -1,9 +1,9 @@
 import "server-only";
 import { createRoute, type RouteHandler, z } from "@hono/zod-openapi";
-import { domainNotFound, getOwnedDomain } from "./shared";
-import { DomainResponseSchema } from "@/shared/api";
 import { ApiErrorSchema } from "@/lib/errors";
+import { DomainResponseSchema } from "@/shared/api";
 import type { Env } from "../setup";
+import { domainNotFound, getOwnedDomain } from "./shared";
 
 export const getDomainRoute = createRoute({
   method: "get",

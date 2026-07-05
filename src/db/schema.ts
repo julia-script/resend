@@ -13,7 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 import {
-  CheckLogEntry,
+  type CheckLogEntry,
   domainStatusReasonValues,
   domainStatusValues,
 } from "@/shared/domain";
@@ -99,15 +99,18 @@ export const domains = pgTable(
     publicKey: text("public_key").notNull(),
     privateKeyEncrypted: text("private_key_encrypted").notNull(),
 
-
-    gracePeriodStartedAt: timestamp("grace_period_started_at", { mode: "date" }),
-    gracePeriodWarningSentAt: timestamp("grace_period_warning_sent_at", { mode: "date" }),
+    gracePeriodStartedAt: timestamp("grace_period_started_at", {
+      mode: "date",
+    }),
+    gracePeriodWarningSentAt: timestamp("grace_period_warning_sent_at", {
+      mode: "date",
+    }),
 
     status: domainStatus("status").notNull().default("not_started"),
     statusReason: domainStatusReason("status_reason"),
     // One jsonb holding the whole array (not jsonb[]): we always read/write it whole.
     checkLog: jsonb("check_log").$type<CheckLogEntry[]>().notNull().default([]),
-  
+
     nextCheckAt: timestamp("next_check_at", { mode: "date" }),
     deadlineAt: timestamp("deadline_at", { mode: "date" }),
     verifiedAt: timestamp("verified_at", { mode: "date" }),

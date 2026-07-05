@@ -1,8 +1,8 @@
 import "server-only";
 import { createRoute, type RouteHandler } from "@hono/zod-openapi";
 import { getDomainsByUserId } from "@/db/domains";
-import { DomainListResponseSchema } from "@/shared/api";
 import { ApiErrorSchema } from "@/lib/errors";
+import { DomainListResponseSchema } from "@/shared/api";
 import type { Env } from "../setup";
 
 export const listDomainsRoute = createRoute({

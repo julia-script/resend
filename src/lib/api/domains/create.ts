@@ -1,9 +1,9 @@
 import "server-only";
-import { createRoute, type RouteHandler, z } from "@hono/zod-openapi";
+import { createRoute, type RouteHandler } from "@hono/zod-openapi";
 import { getDomainsByName, insertDomain } from "@/db/domains";
-import { CreateDomainInputSchema, DomainResponseSchema } from "@/shared/api";
 import * as Dkim from "@/domain/dkim";
-import { ApiError, ApiErrorSchema } from "@/lib/errors";
+import { ApiErrorSchema } from "@/lib/errors";
+import { CreateDomainInputSchema, DomainResponseSchema } from "@/shared/api";
 import type { Env } from "../setup";
 
 export const createDomainRoute = createRoute({

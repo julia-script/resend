@@ -2,10 +2,11 @@ import "server-only";
 import { and, asc, eq, inArray, lte, ne, sql } from "drizzle-orm";
 import { encryptPrivateKey } from "@/domain/crypto";
 import { env } from "@/lib/env";
+import { ApiError } from "@/lib/errors";
+import type { CheckLogEntry, PartialDomain } from "@/shared/domain";
 import { db } from "./client";
 import { domains } from "./schema";
-import { ApiError } from "@/lib/errors";
-import { CheckLogEntry, PartialDomain } from "@/shared/domain";
+
 // // class CreateDomainError extends Schema.TaggedErrorClass<CreateDomainError>()(
 //   "CreateDomainError",
 //   {

@@ -15,7 +15,9 @@ export const getUserEmails = async (
       .where(inArray(users.id, userIds))
       .execute();
     return new Map(
-      result.flatMap((row) => (row.email ? [[row.id, row.email] as const] : [])),
+      result.flatMap((row) =>
+        row.email ? [[row.id, row.email] as const] : [],
+      ),
     );
   } catch (error) {
     throw new ApiError({
