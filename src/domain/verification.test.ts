@@ -3,7 +3,7 @@ import type { PartialDomain } from "@/db/validationschemas";
 import { ApiError } from "@/lib/api/helpers";
 import { env } from "@/lib/env";
 import type { CheckDkimResult } from "./dkim";
-import { transition } from "./verification";
+import { transition, verifyAction } from "./verification";
 
 const {
   gracePeriodMs: GRACE_PERIOD,
@@ -188,6 +188,40 @@ describe("verified", () => {
       gracePeriodWarningSentAt: null,
     });
     expect(t?.events).toEqual(["notifyGracePeriodExpired"]);
+  });
+});
+
+describe("verifyAction", () => {
+  test("not_started → start", () => {
+    expect(verifyAction(makeDomain({ status: "not_started" }))).toBe("start");
+  });
+
+  test("in_progress and verified → check (incl. during grace period)", () => {
+    expect(verifyAction(makeDomain({ status: "in_progress" }))).toBe("check");
+    expect(verifyAction(makeDomain({ status: "verified" }))).toBe("check");
+    expect(
+      verifyAction(
+        makeDomain({ status: "verified", gracePeriodStartedAt: NOW }),
+      ),
+    ).toBe("check");
+  });
+
+  test("failed with recoverable reasons → restart with existing keys", () => {
+    for (const statusReason of [
+      "expired",
+      "grace_period_expired",
+      "canceled",
+    ] as const) {
+      expect(verifyAction(makeDomain({ status: "failed", statusReason }))).toBe(
+        "restart",
+      );
+    }
+  });
+
+  test("failed/superseded → rotate keys first", () => {
+    expect(
+      verifyAction(makeDomain({ status: "failed", statusReason: "superseded" })),
+    ).toBe("rotate");
   });
 });
 

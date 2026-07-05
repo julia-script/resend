@@ -1,11 +1,11 @@
-import { and, asc, eq, inArray, lte, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, lte, ne, sql } from "drizzle-orm";
 import { encryptPrivateKey } from "@/domain/crypto";
 import { env } from "@/lib/env";
 import { db, domains, domainStatus, domainStatusReason } from "./schema";
 import { z } from "zod";
 import { PgEnum } from "drizzle-orm/pg-core";
 import { ApiError } from "@/lib/api/helpers";
-import { PartialDomain } from "./validationschemas";
+import { CheckLogEntry, PartialDomain } from "./validationschemas";
 // import { z } from "zod";
 // class CreateDomainError extends Schema.TaggedErrorClass<CreateDomainError>()(
 //   "CreateDomainError",
@@ -198,6 +198,45 @@ export const updateDomain = async (
     throw new ApiError({
       code: "db/update_domain_failed",
       message: "Failed to update domain",
+      cause: error,
+    });
+  }
+};
+
+/**
+ * Replaces a domain's DKIM identity. Key fields are deliberately not part of
+ * DomainUpdate: rotation is its own operation (used when re-claiming a
+ * superseded domain) and must never happen as a side effect of a status write.
+ */
+export const rotateDomainKeys = async (
+  id: string,
+  keys: { selector: string; publicKey: string; privateKey: string },
+): Promise<PartialDomain | null> => {
+  const privateKeyEncrypted = await encryptPrivateKey(
+    keys.privateKey,
+    env.encryptionKey,
+  );
+  const rotatedEntry: CheckLogEntry[] = [
+    { status: "rotated", checkedAt: Date.now() },
+  ];
+  try {
+    const result = await db
+      .update(domains)
+      .set({
+        selector: keys.selector,
+        publicKey: keys.publicKey,
+        privateKeyEncrypted,
+        // jsonb concat: logged atomically with the rotation itself.
+        checkLog: sql`${domains.checkLog} || ${JSON.stringify(rotatedEntry)}::jsonb`,
+      })
+      .where(eq(domains.id, id))
+      .returning(partialDomainTable)
+      .execute();
+    return result[0] || null;
+  } catch (error) {
+    throw new ApiError({
+      code: "db/rotate_domain_keys_failed",
+      message: "Failed to rotate domain keys",
       cause: error,
     });
   }

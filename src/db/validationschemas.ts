@@ -45,6 +45,10 @@ export const CheckLogEntrySchema = z.union([
     checkedAt: z.number(),
   }),
   z.object({
+    status: z.literal("rotated"),
+    checkedAt: z.number(),
+  }),
+  z.object({
     status: z.literal("revoked"),
     reason: z.union([
       z.literal("superseded"),

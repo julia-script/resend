@@ -38,6 +38,27 @@ export type Transition = {
   events?: VerificationEvent[];
 };
 
+export type VerifyAction = "start" | "restart" | "rotate" | "check";
+
+/**
+ * What a manual verify request should do for a domain in its current state:
+ * - `start`: begin the first verification (not_started)
+ * - `restart`: verify again with the existing keys — the record may simply
+ *   have arrived late or come back (failed: expired / grace_period_expired)
+ * - `rotate`: generate new keys before restarting — the name was taken over
+ *   by another account, so the old record must never validate again
+ *   (failed: superseded)
+ * - `check`: already active (in_progress / verified); just run a check now
+ */
+export const verifyAction = (domain: PartialDomain): VerifyAction => {
+  if (domain.status === "not_started") return "start";
+  if (domain.status === "failed") {
+    if (domain.statusReason === "superseded") return "rotate";
+    return "restart";
+  }
+  return "check";
+};
+
 /**
  * Pure state machine for one DKIM check outcome. Returns null when the
  * domain's status doesn't participate in checks (not_started, failed).

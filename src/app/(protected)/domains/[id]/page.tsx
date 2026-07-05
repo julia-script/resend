@@ -72,6 +72,7 @@ const timeAgo = (ts: number) => {
 const logEntryLabel = (entry: CheckLogEntry): string => {
   if (entry.status === "ok") return "Record found — all good";
   if (entry.status === "expired") return "Verification window expired";
+  if (entry.status === "rotated") return "New DKIM record generated";
   if (entry.status === "revoked") {
     if (entry.reason === "superseded") return "Revoked — verified by another account";
     if (entry.reason === "grace_period_expired") return "Revoked — grace period ran out";
