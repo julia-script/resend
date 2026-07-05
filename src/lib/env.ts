@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+const MINUTE_IN_MS = 1000 * 60;
+const DAY_IN_MS = 1000 * 60 * 60 * 24;
+const ms = z.coerce.number().int().positive();
 
 const EnvSchema = z.object({
   authSecret: z.string(),
@@ -9,6 +12,14 @@ const EnvSchema = z.object({
   cronSecret: z.string(),
   nodeEnv: z.enum(["development", "test", "production"]).default("development"),
   dkimSelector: z.string().default("resendtest"),
+
+  // Verification timings (ms). Defaults match the shipped behavior.
+  pendingRecheckMs: ms.default(MINUTE_IN_MS),
+  successRecheckMs: ms.default(DAY_IN_MS),
+  gracePeriodMs: ms.default(DAY_IN_MS),
+  gracePeriodWarningMs: ms.default(60 * MINUTE_IN_MS),
+  verificationWindowMs: ms.default(2 * DAY_IN_MS),
+  notificationsFrom: z.string().default("Resend <notifications@jlort.com>"),
 });
 export const env = EnvSchema.parse({
   authSecret: process.env.AUTH_SECRET,
@@ -18,4 +29,10 @@ export const env = EnvSchema.parse({
   cronSecret: process.env.CRON_SECRET,
   nodeEnv: process.env.NODE_ENV,
   dkimSelector: process.env.DKIM_SELECTOR,
+  pendingRecheckMs: process.env.PENDING_RECHECK_MS,
+  successRecheckMs: process.env.SUCCESS_RECHECK_MS,
+  gracePeriodMs: process.env.GRACE_PERIOD_MS,
+  gracePeriodWarningMs: process.env.GRACE_PERIOD_WARNING_MS,
+  verificationWindowMs: process.env.VERIFICATION_WINDOW_MS,
+  notificationsFrom: process.env.NOTIFICATIONS_FROM,
 });

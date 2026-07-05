@@ -1,3 +1,4 @@
+import { chunk, compact, uniq } from "lodash-es";
 import { Resend } from "resend";
 import type { PartialDomain } from "@/db/validationschemas";
 import { getUserEmails } from "@/db/users";
@@ -5,7 +6,7 @@ import { env } from "@/lib/env";
 import type { VerificationEvent } from "./verification";
 
 const resend = new Resend(env.authResendKey);
-const FROM = "Resend <notifications@jlort.com>";
+const FROM = env.notificationsFrom;
 const BATCH_LIMIT = 100; // Resend batch API maximum
 
 export type Notification = {
@@ -44,24 +45,26 @@ const templates: Partial<Record<VerificationEvent, Template>> = {
 export const dispatchNotifications = async (
   notifications: Notification[],
 ): Promise<void> => {
-  const withTemplate = notifications.flatMap(({ event, domain }) => {
-    const template = templates[event];
-    return template ? [{ domain, ...template(domain) }] : [];
-  });
+  const withTemplate = compact(
+    notifications.map(({ event, domain }) => {
+      const template = templates[event];
+      return template && { domain, ...template(domain) };
+    }),
+  );
   if (withTemplate.length === 0) return;
 
-  const emails = await getUserEmails([
-    ...new Set(withTemplate.map(({ domain }) => domain.userId)),
-  ]);
-  const payloads = withTemplate.flatMap(({ domain, subject, text }) => {
-    const to = emails.get(domain.userId);
-    return to ? [{ from: FROM, to: [to], subject, text }] : [];
-  });
+  const emails = await getUserEmails(
+    uniq(withTemplate.map(({ domain }) => domain.userId)),
+  );
+  const payloads = compact(
+    withTemplate.map(({ domain, subject, text }) => {
+      const to = emails.get(domain.userId);
+      return to && { from: FROM, to: [to], subject, text };
+    }),
+  );
 
-  for (let i = 0; i < payloads.length; i += BATCH_LIMIT) {
-    const { error } = await resend.batch.send(
-      payloads.slice(i, i + BATCH_LIMIT),
-    );
+  for (const batch of chunk(payloads, BATCH_LIMIT)) {
+    const { error } = await resend.batch.send(batch);
     // Email failures must not fail the check run; the state is already saved.
     if (error) {
       console.error("notification batch send failed", error);

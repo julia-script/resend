@@ -1,6 +1,7 @@
 import { createRoute, type RouteHandler, z } from "@hono/zod-openapi";
 import { getDomainById, updateDomain } from "@/db/domains";
 import { PartialDomainSchema } from "@/db/validationschemas";
+import { env } from "@/lib/env";
 import { ApiError } from "../helpers";
 import type { Env } from "../setup";
 
@@ -27,9 +28,6 @@ export const verifyDomainRoute = createRoute({
   },
 });
 
-const DAY_IN_MS = 1000 * 60 * 60 * 24;
-
-
 export const verifyDomainHandler: RouteHandler<
   typeof verifyDomainRoute,
   Env
@@ -47,7 +45,7 @@ export const verifyDomainHandler: RouteHandler<
     await updateDomain(domain.id, {
       status: "in_progress",
       nextCheckAt: new Date(),
-      deadlineAt: new Date(Date.now() + DAY_IN_MS * 2),
+      deadlineAt: new Date(Date.now() + env.verificationWindowMs),
     });
   }
 

@@ -5,17 +5,11 @@ import {
 } from "@/db/domains";
 import type { CheckLogEntry, PartialDomain } from "@/db/validationschemas";
 import type { ApiError } from "@/lib/api/helpers";
+import { env } from "@/lib/env";
 import * as Dkim from "./dkim";
 import type { CheckDkimResult } from "./dkim";
 import type { Notification } from "./notifications";
 
-const DAY_IN_MS = 1000 * 60 * 60 * 24;
-const MINUTE_IN_MS = 1000 * 60;
-
-export const PENDING_RECHECK_INTERVAL = MINUTE_IN_MS;
-export const SUCCESS_RECHECK_INTERVAL = DAY_IN_MS;
-export const GRACE_PERIOD = DAY_IN_MS;
-export const GRACE_PERIOD_WARNING = MINUTE_IN_MS * 60;
 // ponytail: unbounded jsonb growth otherwise; raise if the log needs history.
 const CHECK_LOG_MAX_ENTRIES = 100;
 
@@ -60,7 +54,7 @@ export const transition = (
           status: "verified",
           statusReason: null,
           verifiedAt: now,
-          nextCheckAt: addMs(now, SUCCESS_RECHECK_INTERVAL),
+          nextCheckAt: addMs(now, env.successRecheckMs),
           deadlineAt: null,
           gracePeriodStartedAt: null,
           gracePeriodWarningSentAt: null,
@@ -90,7 +84,7 @@ export const transition = (
       update: {
         status: "in_progress",
         statusReason: null,
-        nextCheckAt: addMs(now, PENDING_RECHECK_INTERVAL),
+        nextCheckAt: addMs(now, env.pendingRecheckMs),
         deadlineAt: domain.deadlineAt,
         gracePeriodStartedAt: null,
         gracePeriodWarningSentAt: null,
@@ -112,7 +106,7 @@ export const transition = (
         update: {
           status: "verified",
           statusReason: null,
-          nextCheckAt: addMs(now, SUCCESS_RECHECK_INTERVAL),
+          nextCheckAt: addMs(now, env.successRecheckMs),
           gracePeriodStartedAt: null,
           gracePeriodWarningSentAt: null,
           deadlineAt: null,
@@ -129,7 +123,7 @@ export const transition = (
 
     if (domain.gracePeriodStartedAt) {
       // Grace period ran out: revoke.
-      if (isPast(addMs(domain.gracePeriodStartedAt, GRACE_PERIOD), now)) {
+      if (isPast(addMs(domain.gracePeriodStartedAt, env.gracePeriodMs), now)) {
         return {
           update: {
             status: "failed",
@@ -146,14 +140,14 @@ export const transition = (
       }
 
       // Still inside the grace period; warn once past the warning threshold.
-      const warnAt = addMs(domain.gracePeriodStartedAt, GRACE_PERIOD_WARNING);
+      const warnAt = addMs(domain.gracePeriodStartedAt, env.gracePeriodWarningMs);
       const shouldWarn =
         isPast(warnAt, now) && domain.gracePeriodWarningSentAt === null;
       return {
         update: {
           status: "verified",
           statusReason: null,
-          nextCheckAt: addMs(now, PENDING_RECHECK_INTERVAL),
+          nextCheckAt: addMs(now, env.pendingRecheckMs),
           gracePeriodStartedAt: domain.gracePeriodStartedAt,
           gracePeriodWarningSentAt: shouldWarn
             ? now
@@ -171,7 +165,7 @@ export const transition = (
       update: {
         status: "verified",
         statusReason: null,
-        nextCheckAt: addMs(now, PENDING_RECHECK_INTERVAL),
+        nextCheckAt: addMs(now, env.pendingRecheckMs),
         verifiedAt: domain.verifiedAt,
         gracePeriodStartedAt: now,
         gracePeriodWarningSentAt: null,

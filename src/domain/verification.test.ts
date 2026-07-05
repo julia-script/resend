@@ -1,14 +1,16 @@
 import { describe, expect, test } from "vitest";
 import type { PartialDomain } from "@/db/validationschemas";
 import { ApiError } from "@/lib/api/helpers";
+import { env } from "@/lib/env";
 import type { CheckDkimResult } from "./dkim";
-import {
-  GRACE_PERIOD,
-  GRACE_PERIOD_WARNING,
-  PENDING_RECHECK_INTERVAL,
-  SUCCESS_RECHECK_INTERVAL,
-  transition,
-} from "./verification";
+import { transition } from "./verification";
+
+const {
+  gracePeriodMs: GRACE_PERIOD,
+  gracePeriodWarningMs: GRACE_PERIOD_WARNING,
+  pendingRecheckMs: PENDING_RECHECK_INTERVAL,
+  successRecheckMs: SUCCESS_RECHECK_INTERVAL,
+} = env;
 
 const NOW = new Date("2026-07-05T12:00:00Z");
 const minutes = (n: number) => n * 60 * 1000;
