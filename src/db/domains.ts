@@ -1,13 +1,12 @@
+import "server-only";
 import { and, asc, eq, inArray, lte, ne, sql } from "drizzle-orm";
 import { encryptPrivateKey } from "@/domain/crypto";
 import { env } from "@/lib/env";
-import { db, domains, domainStatus, domainStatusReason } from "./schema";
-import { z } from "zod";
-import { PgEnum } from "drizzle-orm/pg-core";
-import { ApiError } from "@/lib/api/helpers";
-import { CheckLogEntry, PartialDomain } from "./validationschemas";
-// import { z } from "zod";
-// class CreateDomainError extends Schema.TaggedErrorClass<CreateDomainError>()(
+import { db } from "./client";
+import { domains } from "./schema";
+import { ApiError } from "@/lib/errors";
+import { CheckLogEntry, PartialDomain } from "@/shared/domain";
+// // class CreateDomainError extends Schema.TaggedErrorClass<CreateDomainError>()(
 //   "CreateDomainError",
 //   {
 //     message: Schema.String,
@@ -37,7 +36,6 @@ export const partialDomainTable = {
   updatedAt: domains.updatedAt,
 };
 
-// type PartialDomain = Simplify<z.infer<typeof PartialDomainSchema>>;
 export const getDomainsByUserId = async (
   userId: string,
 ): Promise<PartialDomain[]> => {
@@ -47,7 +45,7 @@ export const getDomainsByUserId = async (
       .from(domains)
       .where(eq(domains.userId, userId))
       .execute();
-    return result || [];
+    return result;
   } catch (error) {
     throw new ApiError({
       code: "db/get_domains_by_user_id_failed",
@@ -86,7 +84,7 @@ export const getDomainsByName = async (
       .from(domains)
       .where(eq(domains.name, name))
       .execute();
-    return result || [];
+    return result;
   } catch (error) {
     throw new ApiError({
       code: "db/get_domains_by_name_failed",
@@ -131,7 +129,7 @@ export const getDomainsDueForCheck = async (
       .orderBy(asc(domains.nextCheckAt))
       .limit(limit)
       .execute();
-    return result || [];
+    return result;
   } catch (error) {
     throw new ApiError({
       code: "db/get_domains_due_for_check_failed",
@@ -158,30 +156,11 @@ export const getVerifiedDomainsByName = async (
         ),
       )
       .execute();
-    return result || [];
+    return result;
   } catch (error) {
     throw new ApiError({
       code: "db/get_verified_domains_by_name_failed",
       message: "Failed to get verified domains by name",
-      cause: error,
-    });
-  }
-};
-
-export const getDomainsByStatus = async (
-  statuses: PartialDomain["status"][],
-): Promise<PartialDomain[]> => {
-  try {
-    const result = await db
-      .select(partialDomainTable)
-      .from(domains)
-      .where(inArray(domains.status, statuses))
-      .execute();
-    return result || [];
-  } catch (error) {
-    throw new ApiError({
-      code: "db/get_domains_by_status_failed",
-      message: "Failed to get domains by status",
       cause: error,
     });
   }

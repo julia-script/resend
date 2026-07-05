@@ -1,9 +1,11 @@
-import { createRoute, type RouteHandler, z } from "@hono/zod-openapi";
+import "server-only";
+import { createRoute, type RouteHandler } from "@hono/zod-openapi";
+import { CronSweepResponseSchema } from "@/shared/api";
 import { getDomainsDueForCheck } from "@/db/domains";
 import { dispatchNotifications } from "@/domain/notifications";
 import { verifyDomain } from "@/domain/verification";
 import { env } from "@/lib/env";
-import { ApiError } from "../helpers";
+import { ApiErrorSchema } from "@/lib/errors";
 import type { Env } from "../setup";
 
 export const cronVerifyRoute = createRoute({
@@ -15,18 +17,14 @@ export const cronVerifyRoute = createRoute({
       description: "Cron tick accepted",
       content: {
         "application/json": {
-          schema: z.object({
-            ok: z.boolean(),
-            checked: z.number(),
-            failed: z.number(),
-          }),
+          schema: CronSweepResponseSchema,
         },
       },
     },
     401: {
       description: "Missing or invalid cron secret",
       content: {
-        "application/json": { schema: ApiError.schema },
+        "application/json": { schema: ApiErrorSchema },
       },
     },
   },

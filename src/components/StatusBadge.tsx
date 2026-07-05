@@ -1,4 +1,4 @@
-import type { PartialDomain } from "@/db/validationschemas";
+import type { PartialDomain } from "@/shared/domain";
 import { strings } from "@/lib/strings";
 
 const statusClassNames: Record<PartialDomain["status"], string> = {

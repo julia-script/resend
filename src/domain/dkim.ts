@@ -1,16 +1,10 @@
+import "server-only";
 import { randomBytes } from "node:crypto";
 import { generateRsaKeyPair } from "./crypto";
 import * as tldts from "tldts";
-import { ApiError, type Result } from "@/lib/api/helpers";
+import { ApiError, type Result } from "@/lib/errors";
+import { dkimRecordName } from "@/shared/domain";
 import { resolveTxt } from "./dns";
-
-export const recordName = (options: { selector: string; domain: string }) => {
-  return `${options.selector}._domainkey.${options.domain}`;
-};
-
-export const recordValue = (options: { publicKey: string }) => {
-  return `v=DKIM1; k=rsa; p=${options.publicKey}`;
-};
 
 const DKIM_MODULUS_LENGTH = 1024;
 const SELECTOR_BYTES = 6; // 12 lowercase hex chars, DNS-label-safe
@@ -38,7 +32,7 @@ export const resolveDkim = async (selector: string, domain: string) => {
     });
   }
   // happy path first
-  const record = recordName({ selector, domain });
+  const record = dkimRecordName({ selector, name: domain });
   const result = await resolveTxt(record);
   if (result.type === "success") {
     return result.value;

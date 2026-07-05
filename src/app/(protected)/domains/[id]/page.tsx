@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
-import type {
-  CheckLogEntry,
-  PartialDomain,
-} from "@/db/validationschemas";
+import {
+  type CheckLogEntry,
+  dkimRecordName,
+  dkimRecordValue,
+  type PartialDomain,
+} from "@/shared/domain";
 import {
   isInGrace,
   useDeleteDomain,
@@ -209,11 +211,11 @@ export default function DomainPage({
             <div className="mt-4 grid gap-4">
               <Field
                 label={strings.domainPage.nameLabel}
-                value={`${domain.selector}._domainkey.${domain.name}`}
+                value={dkimRecordName(domain)}
               />
               <Field
                 label={strings.domainPage.valueLabel}
-                value={`v=DKIM1; k=rsa; p=${domain.publicKey}`}
+                value={dkimRecordValue(domain)}
               />
             </div>
             <DnsGuide />

@@ -1,14 +1,16 @@
+import "server-only";
 import {
   type DomainUpdate,
   getVerifiedDomainsByName,
   updateDomain,
 } from "@/db/domains";
-import type { CheckLogEntry, PartialDomain } from "@/db/validationschemas";
-import type { ApiError } from "@/lib/api/helpers";
+import type { CheckLogEntry, PartialDomain } from "@/shared/domain";
+import type { ApiError } from "@/lib/errors";
 import { env } from "@/lib/env";
 import * as Dkim from "./dkim";
 import type { CheckDkimResult } from "./dkim";
 import type { Notification } from "./notifications";
+import type { RequiredBy } from "@/shared/types";
 
 // ponytail: unbounded jsonb growth otherwise; raise if the log needs history.
 const CHECK_LOG_MAX_ENTRIES = 100;
@@ -25,7 +27,6 @@ const failureReason = (
   return "unexpected_error";
 };
 
-type RequiredBy<T, K extends keyof T> = Required<Pick<T, K>> & Omit<T, K>;
 export type VerificationEvent =
   | "notifyVerificationSucceeded"
   | "notifyVerificationFailed"

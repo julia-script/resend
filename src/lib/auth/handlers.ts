@@ -1,3 +1,4 @@
+import "server-only";
 import NextAuth, { type DefaultSession } from "next-auth";
 import Resend from "next-auth/providers/resend";
 import { DrizzleAdapter } from "./drizzleadapter";

@@ -1,8 +1,9 @@
+import "server-only";
 import { createRoute, type RouteHandler, z } from "@hono/zod-openapi";
 import { getDomainsByName, insertDomain } from "@/db/domains";
-import { PartialDomainSchema } from "@/db/validationschemas";
+import { CreateDomainInputSchema, DomainResponseSchema } from "@/shared/api";
 import * as Dkim from "@/domain/dkim";
-import { ApiError } from "../helpers";
+import { ApiError, ApiErrorSchema } from "@/lib/errors";
 import type { Env } from "../setup";
 
 export const createDomainRoute = createRoute({
@@ -13,10 +14,7 @@ export const createDomainRoute = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: z.object({
-            name: z.string().min(1),
-            enforce: z.boolean().optional(),
-          }),
+          schema: CreateDomainInputSchema,
         },
       },
     },
@@ -27,7 +25,7 @@ export const createDomainRoute = createRoute({
       description: "The created (or already owned) domain",
       content: {
         "application/json": {
-          schema: z.object({ data: PartialDomainSchema }),
+          schema: DomainResponseSchema,
         },
       },
     },
@@ -35,13 +33,13 @@ export const createDomainRoute = createRoute({
       description:
         "The name is verified by another account; retry with enforce: true to claim it",
       content: {
-        "application/json": { schema: ApiError.schema },
+        "application/json": { schema: ApiErrorSchema },
       },
     },
     500: {
       description: "Internal server error",
       content: {
-        "application/json": { schema: ApiError.schema },
+        "application/json": { schema: ApiErrorSchema },
       },
     },
   },

@@ -1,6 +1,9 @@
+import "server-only";
 import { createRoute, type RouteHandler, z } from "@hono/zod-openapi";
-import { deleteDomain, getDomainById } from "@/db/domains";
-import { ApiError } from "../helpers";
+import { DeleteDomainResponseSchema } from "@/shared/api";
+import { deleteDomain } from "@/db/domains";
+import { getOwnedDomain } from "./shared";
+import { ApiErrorSchema } from "@/lib/errors";
 import type { Env } from "../setup";
 
 export const deleteDomainRoute = createRoute({
@@ -15,14 +18,14 @@ export const deleteDomainRoute = createRoute({
       description: "The domain was permanently deleted",
       content: {
         "application/json": {
-          schema: z.object({ data: z.object({ id: z.string() }) }),
+          schema: DeleteDomainResponseSchema,
         },
       },
     },
     404: {
       description: "Domain not found",
       content: {
-        "application/json": { schema: ApiError.schema },
+        "application/json": { schema: ApiErrorSchema },
       },
     },
   },
@@ -34,9 +37,8 @@ export const deleteDomainHandler: RouteHandler<
 > = async (c) => {
   const session = c.get("session");
   const { id } = c.req.valid("param");
-  const domain = await getDomainById(id);
-  // Not-owned reads 404 too, so domain ids can't be probed.
-  if (!domain || domain.userId !== session.user.id) {
+  const domain = await getOwnedDomain(session, id);
+  if (!domain) {
     return c.json(
       { code: "domains/not_found", message: "Domain not found" },
       404,

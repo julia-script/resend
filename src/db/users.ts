@@ -1,6 +1,8 @@
+import "server-only";
 import { inArray } from "drizzle-orm";
-import { ApiError } from "@/lib/api/helpers";
-import { db, users } from "./schema";
+import { ApiError } from "@/lib/errors";
+import { db } from "./client";
+import { users } from "./schema";
 
 export const getUserEmails = async (
   userIds: string[],

@@ -1,6 +1,8 @@
+import "server-only";
 import { createRoute, type RouteHandler, z } from "@hono/zod-openapi";
-import { getDomainById, rotateDomainKeys, updateDomain } from "@/db/domains";
-import { PartialDomainSchema } from "@/db/validationschemas";
+import { rotateDomainKeys, updateDomain } from "@/db/domains";
+import { getOwnedDomain } from "./shared";
+import { DomainResponseSchema } from "@/shared/api";
 import * as Dkim from "@/domain/dkim";
 import { dispatchNotifications } from "@/domain/notifications";
 import {
@@ -9,7 +11,7 @@ import {
   verifyDomain,
 } from "@/domain/verification";
 import { env } from "@/lib/env";
-import { ApiError } from "../helpers";
+import { ApiErrorSchema } from "@/lib/errors";
 import type { Env } from "../setup";
 
 export const verifyDomainRoute = createRoute({
@@ -23,13 +25,13 @@ export const verifyDomainRoute = createRoute({
     200: {
       description: "The domain after triggering verification",
       content: {
-        "application/json": { schema: z.object({ data: PartialDomainSchema }) },
+        "application/json": { schema: DomainResponseSchema },
       },
     },
     404: {
       description: "Domain not found",
       content: {
-        "application/json": { schema: ApiError.schema },
+        "application/json": { schema: ApiErrorSchema },
       },
     },
   },
@@ -44,8 +46,8 @@ export const verifyDomainHandler: RouteHandler<
 > = async (c) => {
   const session = c.get("session");
   const { id } = c.req.valid("param");
-  let domain = await getDomainById(id);
-  if (!domain || domain.userId !== session.user.id) {
+  let domain = await getOwnedDomain(session, id);
+  if (!domain) {
     return c.json(
       { code: "domains/not_found", message: "Domain not found" },
       404,

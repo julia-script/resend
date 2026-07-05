@@ -1,3 +1,4 @@
+import "server-only";
 import { z } from "zod";
 
 const MINUTE_IN_MS = 1000 * 60;
@@ -11,7 +12,6 @@ const EnvSchema = z.object({
   encryptionKey: z.string(),
   cronSecret: z.string(),
   nodeEnv: z.enum(["development", "test", "production"]).default("development"),
-  dkimSelector: z.string().default("resendtest"),
 
   // Verification timings (ms). Defaults match the shipped behavior.
   pendingRecheckMs: ms.default(MINUTE_IN_MS),
@@ -28,7 +28,6 @@ export const env = EnvSchema.parse({
   encryptionKey: process.env.ENCRYPTION_KEY,
   cronSecret: process.env.CRON_SECRET,
   nodeEnv: process.env.NODE_ENV,
-  dkimSelector: process.env.DKIM_SELECTOR,
   pendingRecheckMs: process.env.PENDING_RECHECK_MS,
   successRecheckMs: process.env.SUCCESS_RECHECK_MS,
   gracePeriodMs: process.env.GRACE_PERIOD_MS,

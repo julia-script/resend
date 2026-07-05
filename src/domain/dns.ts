@@ -1,4 +1,5 @@
-import { ApiError } from "@/lib/api/helpers";
+import "server-only";
+import { ApiError } from "@/lib/errors";
 import { get } from "lodash-es";
 import dns from "node:dns/promises";
 
@@ -35,9 +36,3 @@ export const wrapDns = async <A>(
 
 export const resolveTxt = (domain: string) =>
   wrapDns(() => dns.resolveTxt(domain));
-export const resolveNs = (domain: string) =>
-  wrapDns(() => dns.resolveNs(domain));
-export const resolveMx = (domain: string) =>
-  wrapDns(() => dns.resolveMx(domain));
-export const resolveSrv = (domain: string) =>
-  wrapDns(() => dns.resolveSrv(domain));

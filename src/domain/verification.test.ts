@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import type { PartialDomain } from "@/db/validationschemas";
-import { ApiError } from "@/lib/api/helpers";
+import type { PartialDomain } from "@/shared/domain";
+import { ApiError } from "@/lib/errors";
 import { env } from "@/lib/env";
 import type { CheckDkimResult } from "./dkim";
 import { isCheckThrottled, transition, verifyAction } from "./verification";

@@ -1,3 +1,4 @@
+import "server-only";
 // due to some imcompability of versions from authjs and drizzle, I needed to define my own Drizzle Adapter
 // which is pretty much a copy of the original but with a few adjustments
 
@@ -10,10 +11,10 @@ import type {
   AdapterUser,
   VerificationToken,
 } from "next-auth/adapters";
+import { db } from "@/db/client";
 import {
   accounts,
   authenticators,
-  db,
   sessions,
   users,
   verificationTokens,

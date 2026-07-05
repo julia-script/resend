@@ -1,8 +1,10 @@
-import { OpenAPIHono, type z } from "@hono/zod-openapi";
+import "server-only";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
 import { createMiddleware } from "hono/factory";
 import type { Session } from "next-auth";
 import { auth } from "../auth/handlers";
+import { ApiError } from "@/lib/errors";
 import { listDomainsHandler, listDomainsRoute } from "./domains/list";
 import { createDomainHandler, createDomainRoute } from "./domains/create";
 import { getDomainHandler, getDomainRoute } from "./domains/get";
@@ -16,16 +18,6 @@ export type Env = {
   };
 };
 
-// const errorContent = (description: string) => ({
-//   description,
-//   content: { "application/json": { schema: ErrorSchema } },
-// });
-
-const _jsonContent = <T extends z.ZodType>(schema: T, description: string) => ({
-  description,
-  content: { "application/json": { schema } },
-});
-
 /** Session gate: every /domains route is scoped to the signed-in user. */
 const requireSession = createMiddleware<Env>(async (c, next) => {
   const session = await auth();
@@ -33,11 +25,9 @@ const requireSession = createMiddleware<Env>(async (c, next) => {
   if (!userId) {
     return c.json(
       {
-        // error: {
         name: "Unauthorized",
         code: "unauthorized",
         message: "Sign in to manage domains.",
-        // },
       },
       401,
     );
@@ -65,6 +55,15 @@ export const app = new OpenAPIHono<Env>({
     }
   },
 }).basePath("/api");
+
+// Domain and db failures throw ApiError; one hook maps them all to JSON.
+app.onError((err, c) => {
+  if (err instanceof ApiError) {
+    console.error("api error", err.code, err.cause ?? "");
+    return c.json(err.toJson(), 500);
+  }
+  throw err;
+});
 
 app.doc("/openapi.json", {
   openapi: "3.0.0",

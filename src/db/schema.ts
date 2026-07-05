@@ -11,26 +11,12 @@ import {
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { drizzle } from "drizzle-orm/postgres-js";
-// import postgres from "postgres";
 import type { AdapterAccountType } from "next-auth/adapters";
-import { env } from "@/lib/env";
 import {
   CheckLogEntry,
   domainStatusReasonValues,
   domainStatusValues,
-} from "./validationschemas";
-
-// import { env } from "@/lib/env";
-
-// const pool = postgres(Redacted.value(env.databaseUrl), { max: 1 });
-
-// HMR re-evaluates this module; reuse the pool or dev leaks a connection per reload.
-const globalForDb = globalThis as unknown as {
-  db?: ReturnType<typeof drizzle>;
-};
-export const db = globalForDb.db ?? drizzle(env.databaseUrl);
-if (env.nodeEnv !== "production") globalForDb.db = db;
+} from "@/shared/domain";
 
 export const users = pgTable("user", {
   id: uuid("id")
@@ -99,21 +85,6 @@ export const domainStatusReason = pgEnum(
   domainStatusReasonValues,
 );
 
-export const checkTrigger = pgEnum("check_trigger", [
-  "cron",
-  "manual",
-  "page_load",
-]);
-
-export const checkOutcome = pgEnum("check_outcome", [
-  "verified",
-  "not_found",
-  "value_mismatch",
-  "wrong_host",
-  "no_delegation",
-  "dns_error",
-]);
-
 export const domains = pgTable(
   "domain",
   {
@@ -151,26 +122,6 @@ export const domains = pgTable(
     index("domain_due_checks_idx").on(domain.status, domain.nextCheckAt),
   ],
 );
-
-// export const checks = pgTable(
-//   "check",
-//   {
-//     id: uuid("id")
-//       .primaryKey()
-//       .$defaultFn(() => crypto.randomUUID()),
-//     domainId: uuid("domain_id")
-//       .notNull()
-//       .references(() => domains.id, { onDelete: "cascade" }),
-//     recordPurpose: text("record_purpose").notNull().default("dkim"),
-//     checkedAt: timestamp("checked_at", { mode: "date" }).notNull().defaultNow(),
-//     trigger: checkTrigger("trigger").notNull(),
-//     outcome: checkOutcome("outcome").notNull(),
-//     nameserversQueried: text("nameservers_queried").array(),
-//     foundValue: text("found_value"),
-//     causedTransition: boolean("caused_transition").notNull().default(false),
-//   },
-//   (check) => [index("check_timeline_idx").on(check.domainId, check.checkedAt)],
-// );
 
 export const authenticators = pgTable(
   "authenticator",

@@ -1,6 +1,7 @@
+import "server-only";
 import { chunk, compact, uniq } from "lodash-es";
 import { Resend } from "resend";
-import type { PartialDomain } from "@/db/validationschemas";
+import type { PartialDomain } from "@/shared/domain";
 import { getUserEmails } from "@/db/users";
 import { env } from "@/lib/env";
 import type { VerificationEvent } from "./verification";

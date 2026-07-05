@@ -1,5 +1,5 @@
 import { beforeEach, expect, test, vi } from "vitest";
-import type { PartialDomain } from "@/db/validationschemas";
+import type { PartialDomain } from "@/shared/domain";
 
 const { batchSendMock, getUserEmailsMock } = vi.hoisted(() => ({
   batchSendMock: vi.fn(async (_payloads: unknown[]) => ({

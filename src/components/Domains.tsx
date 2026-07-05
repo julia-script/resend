@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { isNameTakenError, useCreateDomain, useDomains } from "@/hooks/domains";
 import { strings } from "@/lib/strings";
+import { dkimRecordName } from "@/shared/domain";
 import { StatusBadge } from "./StatusBadge";
 
 const CreateDomain = () => {
@@ -115,7 +116,7 @@ export const Domains = () => {
                       {domain.name}
                     </p>
                     <p className="mt-0.5 truncate font-mono text-xs text-muted">
-                      {domain.selector}._domainkey.{domain.name}
+                      {dkimRecordName(domain)}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">

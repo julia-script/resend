@@ -1,4 +1,4 @@
-import type { CheckLogEntry, PartialDomain } from "@/db/validationschemas";
+import type { CheckLogEntry, PartialDomain } from "@/shared/domain";
 import type { VerifyAction } from "@/domain/verification";
 
 type Status = PartialDomain["status"];

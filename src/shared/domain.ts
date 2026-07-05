@@ -81,3 +81,9 @@ export const PartialDomainSchema = z.object({
 export type PartialDomain = z.infer<typeof PartialDomainSchema>;
 
 export type CheckLogEntry = z.input<typeof CheckLogEntrySchema>;
+
+// The DKIM TXT record, written once for the resolver and every UI surface.
+export const dkimRecordName = (d: { selector: string; name: string }) =>
+  `${d.selector}._domainkey.${d.name}`;
+export const dkimRecordValue = (d: { publicKey: string }) =>
+  `v=DKIM1; k=rsa; p=${d.publicKey}`;

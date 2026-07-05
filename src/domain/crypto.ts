@@ -1,3 +1,4 @@
+import "server-only";
 import {
   createCipheriv,
   createDecipheriv,
@@ -5,7 +6,7 @@ import {
   randomBytes,
 } from "node:crypto";
 import { promisify } from "node:util";
-import { ApiError } from "@/lib/api/helpers";
+import { ApiError } from "@/lib/errors";
 
 export const generateRsaKeyPair = promisify(generateKeyPairCrypto);
 
