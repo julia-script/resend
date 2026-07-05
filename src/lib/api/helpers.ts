@@ -82,7 +82,9 @@ export class ApiError extends Error {
   }
 }
 
-type Result<S, F> = { type: "success", value: S } | { type: "failure", error: F };
+export type Result<S, F> =
+  | { type: "success"; value: S }
+  | { type: "failure"; error: F };
 type MaybeResultPromise<T, F> = T extends Promise<infer U> ? Promise<Result<U, F>> : Result<T, F>;
 export const ApiErrorSchema = z.object({
   code: z.string(),

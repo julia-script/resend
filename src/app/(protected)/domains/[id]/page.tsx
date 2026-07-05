@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { use, useState } from "react";
 import { z } from "zod";
@@ -52,6 +52,13 @@ export default function DomainPage({
   });
   const domain = data?.data;
 
+  const queryClient = useQueryClient();
+  const verify = useMutation({
+    mutationFn: () => api(`/api/domains/${id}/verify`, { method: "POST" }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["domains", id] }),
+  });
+
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12">
       <Link href="/" className="text-sm text-muted hover:text-foreground">
@@ -94,6 +101,25 @@ export default function DomainPage({
                 value={`v=DKIM1; k=rsa; p=${domain.publicKey}`}
               />
             </div>
+            {domain.status !== "verified" && (
+              <div className="mt-5 border-t border-border pt-4">
+                <button
+                  type="button"
+                  onClick={() => verify.mutate()}
+                  disabled={verify.isPending}
+                  className="rounded-md bg-mint px-3 py-1.5 text-sm font-medium text-mint-foreground transition-opacity hover:opacity-80 disabled:opacity-50"
+                >
+                  {verify.isPending
+                    ? "Starting verification…"
+                    : "I’ve added the record — verify"}
+                </button>
+                {verify.isError && (
+                  <p className="mt-2 text-xs text-peach-foreground">
+                    Couldn’t start verification. Try again.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </>
       )}

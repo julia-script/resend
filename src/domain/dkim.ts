@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { generateRsaKeyPair } from "./crypto";
 import * as tldts from "tldts";
-import { ApiError } from "@/lib/api/helpers";
+import { ApiError, type Result } from "@/lib/api/helpers";
 import { resolveTxt } from "./dns";
 
 export const recordName = (options: { selector: string; domain: string }) => {
@@ -59,6 +59,43 @@ export const resolveDkim = async (selector: string, domain: string) => {
 
 };
 
+
+export type CheckDkimResult = Result<string, ApiError>;
+export const checkDkim = async (options: {
+  selector: string;
+  domain: string;
+  publicKey: string;
+}): Promise<Result<string, ApiError>> => {
+  try {
+    const records = await resolveDkim(options.selector, options.domain);
+    // Compare the p= tag only: providers may reorder/drop v= and k= tags.
+    const match = records
+      .map((chunks) => chunks.join(""))
+      .find((record) => record.match(/p=([^;\s"]+)/)?.[1] === options.publicKey);
+    if (match) {
+      return { type: "success", value: match };
+    }
+    return {
+      type: "failure",
+      error: new ApiError({
+        code: "dkim/key_mismatch",
+        message: "DKIM record found but the public key does not match",
+      }),
+    };
+  } catch (error) {
+    return {
+      type: "failure",
+      error:
+        error instanceof ApiError
+          ? error
+          : new ApiError({
+              code: "dkim/check_failed",
+              message: "DKIM check failed",
+              cause: error,
+            }),
+    };
+  }
+};
 
 export const normalizeDomainName = (name: string)=>{
   const trimmed = name.trim().toLowerCase().replace(/\.$/, "");

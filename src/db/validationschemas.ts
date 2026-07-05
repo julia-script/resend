@@ -5,16 +5,55 @@ import { z } from "zod";
 // pgEnums from these arrays, so this stays the single source of truth.
 export const domainStatusValues = [
   "not_started",
-  "pending",
+  "in_progress",
   "verified",
   "failed",
-  "temporary_failure",
+  // "expired",
+  // "canceled",
 ] as const;
 
 export const domainStatusReasonValues = [
-  "window_expired",
-  "revoked_after_grace",
+  "expired",
+  "canceled",
+  "superceded",
+  "grace_period_expired",
+  // "key_mismatch",
+  // "record_not_found",
+  // "domain_not_found",
+
+  // "window_expired",
+  // "revoked_after_grace",
 ] as const;
+
+export const CheckLogEntrySchema = z.union([
+  z.object({
+    status: z.literal("ok"),
+    checkedAt: z.number(),
+  }),
+  z.object({
+    status: z.literal("failed"),
+    reason: z.union([
+      z.literal("record_not_found"),
+      z.literal("domain_not_found"),
+      z.literal("key_mismatch"),
+      z.literal("unexpected_error"),
+    ]),
+    checkedAt: z.number(),
+  }),
+  z.object({
+    status: z.literal("expired"),
+    checkedAt: z.number(),
+  }),
+  z.object({
+    status: z.literal("revoked"),
+    reason: z.union([
+      z.literal("superceded"),
+      z.literal("grace_period_expired"),
+      z.literal("user_canceled"),
+    ]),
+    checkedAt: z.number(),
+  }),
+]);
 
 export const PartialDomainSchema = z.object({
   id: z.string(),
@@ -24,8 +63,10 @@ export const PartialDomainSchema = z.object({
   publicKey: z.string(),
   status: z.enum(domainStatusValues),
   statusReason: z.enum(domainStatusReasonValues).nullable(),
+  gracePeriodStartedAt: z.coerce.date().nullable(),
+  gracePeriodWarningSentAt: z.coerce.date().nullable(),
 
-  // coerce: over JSON these arrive as ISO strings; on the server they're Dates.
+  checkLog: z.array(CheckLogEntrySchema),
   nextCheckAt: z.coerce.date().nullable(),
   deadlineAt: z.coerce.date().nullable(),
   verifiedAt: z.coerce.date().nullable(),
@@ -34,3 +75,5 @@ export const PartialDomainSchema = z.object({
 });
 
 export type PartialDomain = z.infer<typeof PartialDomainSchema>;
+
+export type CheckLogEntry = z.input<typeof CheckLogEntrySchema>;

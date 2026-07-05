@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, asc, eq, inArray, lte } from "drizzle-orm";
 import { encryptPrivateKey } from "@/domain/crypto";
 import { env } from "@/lib/env";
 import { db, domains, domainStatus, domainStatusReason } from "./schema";
@@ -27,6 +27,9 @@ export const partialDomainTable = {
   publicKey: domains.publicKey,
   status: domains.status,
   statusReason: domains.statusReason,
+  gracePeriodStartedAt: domains.gracePeriodStartedAt,
+  gracePeriodWarningSentAt: domains.gracePeriodWarningSentAt,
+  checkLog: domains.checkLog,
   nextCheckAt: domains.nextCheckAt,
   deadlineAt: domains.deadlineAt,
   verifiedAt: domains.verifiedAt,
@@ -39,12 +42,12 @@ export const getDomainsByUserId = async (
   userId: string,
 ): Promise<PartialDomain[]> => {
   try {
-  const result = await db
-    .select(partialDomainTable)
-    .from(domains)
-    .where(eq(domains.userId, userId))
-    .execute();
-  return result || [];
+    const result = await db
+      .select(partialDomainTable)
+      .from(domains)
+      .where(eq(domains.userId, userId))
+      .execute();
+    return result || [];
   } catch (error) {
     throw new ApiError({
       code: "db/get_domains_by_user_id_failed",
@@ -73,14 +76,16 @@ export const getDomainById = async (
   }
 };
 
-export const getDomainByName = async (name: string): Promise<PartialDomain | null> => {
+export const getDomainByName = async (
+  name: string,
+): Promise<PartialDomain | null> => {
   try {
-  const result = await db
-    .select(partialDomainTable)
-    .from(domains)
-    .where(eq(domains.name, name))
-    .execute();
-  return result[0] || null;
+    const result = await db
+      .select(partialDomainTable)
+      .from(domains)
+      .where(eq(domains.name, name))
+      .execute();
+    return result[0] || null;
   } catch (error) {
     throw new ApiError({
       code: "db/get_domain_by_name_failed",
@@ -90,21 +95,107 @@ export const getDomainByName = async (name: string): Promise<PartialDomain | nul
   }
 };
 
-export const insertDomain = async ({ privateKey, ...params }: Pick<typeof domains.$inferInsert, "name" | "userId" | "selector" | "publicKey"> & { privateKey: string }): Promise<PartialDomain> => {
+/** Domains awaiting (re-)verification whose nextCheckAt has passed. */
+export const getDomainsDueForCheck = async (
+  limit = 50,
+): Promise<PartialDomain[]> => {
+  try {
+    const result = await db
+      .select(partialDomainTable)
+      .from(domains)
+      .where(
+        and(
+          inArray(domains.status, ["in_progress"]),
+          lte(domains.nextCheckAt, new Date()),
+        ),
+      )
+      .orderBy(asc(domains.nextCheckAt))
+      .limit(limit)
+      .execute();
+    return result || [];
+  } catch (error) {
+    throw new ApiError({
+      code: "db/get_domains_due_for_check_failed",
+      message: "Failed to get domains due for check",
+      cause: error,
+    });
+  }
+};
+
+export const getDomainsByStatus = async (
+  statuses: PartialDomain["status"][],
+): Promise<PartialDomain[]> => {
+  try {
+    const result = await db
+      .select(partialDomainTable)
+      .from(domains)
+      .where(inArray(domains.status, statuses))
+      .execute();
+    return result || [];
+  } catch (error) {
+    throw new ApiError({
+      code: "db/get_domains_by_status_failed",
+      message: "Failed to get domains by status",
+      cause: error,
+    });
+  }
+};
+
+export type DomainUpdate = Partial<
+  Pick<
+    typeof domains.$inferInsert,
+    | "status"
+    | "statusReason"
+    | "nextCheckAt"
+    | "deadlineAt"
+    | "verifiedAt"
+    | "gracePeriodStartedAt"
+    | "gracePeriodWarningSentAt"
+    | "checkLog"
+  >
+>;
+export const updateDomain = async (
+  id: string,
+  updates: DomainUpdate,
+): Promise<PartialDomain | null> => {
+  try {
+    const result = await db
+      .update(domains)
+      .set(updates)
+      .where(eq(domains.id, id))
+      .returning(partialDomainTable)
+      .execute();
+    return result[0] || null;
+  } catch (error) {
+    throw new ApiError({
+      code: "db/update_domain_failed",
+      message: "Failed to update domain",
+      cause: error,
+    });
+  }
+};
+
+export const insertDomain = async ({
+  privateKey,
+  ...params
+}: Pick<
+  typeof domains.$inferInsert,
+  "name" | "userId" | "selector" | "publicKey"
+> & { privateKey: string }): Promise<PartialDomain> => {
   const privateKeyEncrypted = await encryptPrivateKey(
     privateKey,
     env.encryptionKey,
   );
   try {
-  const result = await db
-    .insert(domains)
-    .values({
-      ...params,
-      privateKeyEncrypted,
-      status: "not_started",
-    })
-    .returning(partialDomainTable)
-    .execute();
+    const result = await db
+      .insert(domains)
+      .values({
+        ...params,
+        privateKeyEncrypted,
+        status: "not_started",
+      })
+      .returning(partialDomainTable)
+      .execute();
     return result[0];
   } catch (error) {
     throw new ApiError({

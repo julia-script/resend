@@ -7,7 +7,7 @@ const EnvSchema = z.object({
   databaseUrl: z.string(),
   encryptionKey: z.string(),
   cronSecret: z.string(),
-  nodeEnv: z.enum(["development", "production"]).default("development"),
+  nodeEnv: z.enum(["development", "test", "production"]).default("development"),
   dkimSelector: z.string().default("resendtest"),
 });
 export const env = EnvSchema.parse({

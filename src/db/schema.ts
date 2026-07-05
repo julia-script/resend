@@ -2,6 +2,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -15,6 +16,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import type { AdapterAccountType } from "next-auth/adapters";
 import { env } from "@/lib/env";
 import {
+  CheckLogEntry,
   domainStatusReasonValues,
   domainStatusValues,
 } from "./validationschemas";
@@ -23,8 +25,12 @@ import {
 
 // const pool = postgres(Redacted.value(env.databaseUrl), { max: 1 });
 
-const dbUrl = env.databaseUrl;
-export const db = drizzle(dbUrl);
+// HMR re-evaluates this module; reuse the pool or dev leaks a connection per reload.
+const globalForDb = globalThis as unknown as {
+  db?: ReturnType<typeof drizzle>;
+};
+export const db = globalForDb.db ?? drizzle(env.databaseUrl);
+if (env.nodeEnv !== "production") globalForDb.db = db;
 
 export const users = pgTable("user", {
   id: uuid("id")
@@ -121,8 +127,16 @@ export const domains = pgTable(
     selector: text("selector").notNull(),
     publicKey: text("public_key").notNull(),
     privateKeyEncrypted: text("private_key_encrypted").notNull(),
+
+
+    gracePeriodStartedAt: timestamp("grace_period_started_at", { mode: "date" }),
+    gracePeriodWarningSentAt: timestamp("grace_period_warning_sent_at", { mode: "date" }),
+
     status: domainStatus("status").notNull().default("not_started"),
     statusReason: domainStatusReason("status_reason"),
+    // One jsonb holding the whole array (not jsonb[]): we always read/write it whole.
+    checkLog: jsonb("check_log").$type<CheckLogEntry[]>().notNull().default([]),
+  
     nextCheckAt: timestamp("next_check_at", { mode: "date" }),
     deadlineAt: timestamp("deadline_at", { mode: "date" }),
     verifiedAt: timestamp("verified_at", { mode: "date" }),
@@ -138,25 +152,25 @@ export const domains = pgTable(
   ],
 );
 
-export const checks = pgTable(
-  "check",
-  {
-    id: uuid("id")
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    domainId: uuid("domain_id")
-      .notNull()
-      .references(() => domains.id, { onDelete: "cascade" }),
-    recordPurpose: text("record_purpose").notNull().default("dkim"),
-    checkedAt: timestamp("checked_at", { mode: "date" }).notNull().defaultNow(),
-    trigger: checkTrigger("trigger").notNull(),
-    outcome: checkOutcome("outcome").notNull(),
-    nameserversQueried: text("nameservers_queried").array(),
-    foundValue: text("found_value"),
-    causedTransition: boolean("caused_transition").notNull().default(false),
-  },
-  (check) => [index("check_timeline_idx").on(check.domainId, check.checkedAt)],
-);
+// export const checks = pgTable(
+//   "check",
+//   {
+//     id: uuid("id")
+//       .primaryKey()
+//       .$defaultFn(() => crypto.randomUUID()),
+//     domainId: uuid("domain_id")
+//       .notNull()
+//       .references(() => domains.id, { onDelete: "cascade" }),
+//     recordPurpose: text("record_purpose").notNull().default("dkim"),
+//     checkedAt: timestamp("checked_at", { mode: "date" }).notNull().defaultNow(),
+//     trigger: checkTrigger("trigger").notNull(),
+//     outcome: checkOutcome("outcome").notNull(),
+//     nameserversQueried: text("nameservers_queried").array(),
+//     foundValue: text("found_value"),
+//     causedTransition: boolean("caused_transition").notNull().default(false),
+//   },
+//   (check) => [index("check_timeline_idx").on(check.domainId, check.checkedAt)],
+// );
 
 export const authenticators = pgTable(
   "authenticator",

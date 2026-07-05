@@ -6,6 +6,8 @@ import { auth } from "../auth/handlers";
 import { listDomainsHandler, listDomainsRoute } from "./domains/list";
 import { createDomainHandler, createDomainRoute } from "./domains/create";
 import { getDomainHandler, getDomainRoute } from "./domains/get";
+import { verifyDomainHandler, verifyDomainRoute } from "./domains/verify";
+import { cronVerifyHandler, cronVerifyRoute } from "./cron/verify";
 
 export type Env = {
   Variables: {
@@ -84,3 +86,5 @@ app.use("/domains/*", requireSession);
 app.openapi(listDomainsRoute, listDomainsHandler);
 app.openapi(createDomainRoute, createDomainHandler);
 app.openapi(getDomainRoute, getDomainHandler);
+app.openapi(verifyDomainRoute, verifyDomainHandler);
+app.openapi(cronVerifyRoute, cronVerifyHandler);

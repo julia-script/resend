@@ -5,13 +5,12 @@ const statusStyles: Record<
   { label: string; className: string }
 > = {
   not_started: { label: "Not started", className: "bg-border text-muted" },
-  pending: { label: "Pending", className: "bg-accent text-accent-foreground" },
+  in_progress: {
+    label: "In progress",
+    className: "bg-accent text-accent-foreground",
+  },
   verified: { label: "Verified", className: "bg-mint text-mint-foreground" },
   failed: { label: "Failed", className: "bg-peach text-peach-foreground" },
-  temporary_failure: {
-    label: "Temporary failure",
-    className: "bg-peach text-peach-foreground",
-  },
 };
 
 export const StatusBadge = ({
