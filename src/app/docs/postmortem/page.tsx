@@ -530,37 +530,40 @@ export default function DiagramsPage() {
           email product. On its own it&apos;s too little to pretend it&apos;s a
           real product, but in my head it lives inside something Resend-shaped
           (mailing, newsletters), which is where the ink-and-letter name comes
-          from. What it does have is the hard part of every real product in
-          this space: the moment you ask a user to go edit DNS records and
-          trust you with their domain.
+          from. What it does have is the hard part of every real product in this
+          space: the moment you ask a user to go edit DNS records and trust you
+          with their domain.
         </p>
-        <p>You&apos;re reading this inside the deployed app, which felt appropriate.</p>
+        <p>
+          You&apos;re reading this inside the deployed app, which felt
+          appropriate.
+        </p>
       </section>
 
       <section id="process" className="copy mt-14 scroll-mt-20">
         <H2 id="process" title="How it went" />
         <p>
           A good chunk of the time went into planning and research before any
-          code. I hadn&apos;t worked with DKIM before, so I
-          studied how domain verification is actually done in the wild instead
-          of inventing my own scheme. And since the challenge read as
-          product-oriented as it is technical, I spent real time just thinking
-          about what a nice experience would look like.
+          code. I hadn&apos;t worked with DKIM before, so I studied how domain
+          verification is actually done in the wild instead of inventing my own
+          scheme. And since the challenge read as product-oriented as it is
+          technical, I spent real time just thinking about what a nice
+          experience would look like.
         </p>
         <p>
-          Development itself was mostly about getting the flows right and
-          taking scale problems seriously: race conditions between the cron
-          sweep and direct user actions, someone spamming domain creation, and
-          the tricky cases like a domain changing owners. User notifications
-          are sent with the Resend SDK, of course. Auth was the quick part:
-          Next.js, Auth.js, magic links delivered through Resend.
+          Development itself was mostly about getting the flows right and taking
+          scale problems seriously: race conditions between the cron sweep and
+          direct user actions, someone spamming domain creation, and the tricky
+          cases like a domain changing owners. User notifications are sent with
+          the Resend SDK, of course. Auth was the quick part: Next.js, Auth.js,
+          magic links delivered through Resend.
         </p>
         <p>
           The UI came last. I&apos;m not a designer, and AI helped me a lot
           here, but the direction was mine: friendly and not intimidating.
           That&apos;s why the palette is soft and the copy reassures. The
-          message I wanted the whole product to send: DNS changes are a pain
-          for everyone, you&apos;re not alone, it&apos;s clunky and it takes a
+          message I wanted the whole product to send: DNS changes are a pain for
+          everyone, you&apos;re not alone, it&apos;s clunky and it takes a
           while. But don&apos;t worry, I&apos;ve got you.
         </p>
       </section>
@@ -581,19 +584,18 @@ export default function DiagramsPage() {
           you forgot you&apos;d already added this one? The claim flow handles
           both with a two-step confirmation: the first attempt is sent without
           an <code>enforce</code> flag and fails with &ldquo;this domain is
-          already registered&rdquo;, which catches the honest mistake. If
-          taking it over really is the goal, the user confirms, the claim is
-          re-sent with <code>enforce</code> set, and the previous owner is
-          notified.
+          already registered&rdquo;, which catches the honest mistake. If taking
+          it over really is the goal, the user confirms, the claim is re-sent
+          with <code>enforce</code> set, and the previous owner is notified.
         </p>
         <p>
-          <strong>Key rotation on takeover.</strong> Rotation exists to
-          prevent a loop. If a domain&apos;s DNS ended up containing both
-          parties&apos; keys, verification would ping-pong (&ldquo;I own
-          it&rdquo;, &ldquo;no, I own it&rdquo;) with both sides technically
-          correct. Rotating the keys guarantees that reclaiming a domain,
-          whether by the previous owner, a teammate, or me, is always
-          intentional: it requires actually updating DNS.
+          <strong>Key rotation on takeover.</strong> Rotation exists to prevent
+          a loop. If a domain&apos;s DNS ended up containing both parties&apos;
+          keys, verification would ping-pong (&ldquo;I own it&rdquo;, &ldquo;no,
+          I own it&rdquo;) with both sides technically correct. Rotating the
+          keys guarantees that reclaiming a domain, whether by the previous
+          owner, a teammate, or me, is always intentional: it requires actually
+          updating DNS.
         </p>
         <p>
           <strong>Failing gracefully.</strong> Verified domains keep being
@@ -610,26 +612,24 @@ export default function DiagramsPage() {
       <section id="stack" className="copy mt-14 scroll-mt-20">
         <H2 id="stack" title="The stack" />
         <p>
-          <strong>Next.js + React</strong> were comfort picks: I&apos;m
-          familiar with them and they&apos;re easy to deploy.
+          <strong>Next.js + React</strong> were comfort picks: I&apos;m familiar
+          with them and they&apos;re easy to deploy.
         </p>
         <p>
-          <strong>Hono + zod-openapi</strong> was not. On internal projects
-          that live entirely in TypeScript, I prefer APIs that are natively
-          typed end-to-end (tRPC, GraphQL, or plain server actions) and would
-          normally skip REST unless I need it. I built a REST API here because
-          a real product in this space
-          would almost certainly offer a public API, and this stack keeps the
-          types flowing through Zod schemas while producing an OpenAPI spec
-          (and a Scalar reference page at <code>/api/reference</code>) for
-          free.
+          <strong>Hono + zod-openapi</strong> was not. On internal projects that
+          live entirely in TypeScript, I prefer APIs that are natively typed
+          end-to-end (tRPC, GraphQL, or plain server actions) and would normally
+          skip REST unless I need it. I built a REST API here because a real
+          product in this space would almost certainly offer a public API, and
+          this stack keeps the types flowing through Zod schemas while producing
+          an OpenAPI spec (and a Scalar reference page at{" "}
+          <code>/api/reference</code>) for free.
         </p>
         <p>
-          <strong>TanStack Query</strong> was the obvious choice for a page
-          that polls verification state: caching, refetching, and sharing
-          server state across components with almost no ceremony.{" "}
-          <strong>Tailwind</strong> is just convenient, and AI handles it
-          well.
+          <strong>TanStack Query</strong> was the obvious choice for a page that
+          polls verification state: caching, refetching, and sharing server
+          state across components with almost no ceremony.{" "}
+          <strong>Tailwind</strong> is just convenient, and AI handles it well.
         </p>
       </section>
 
@@ -642,28 +642,27 @@ export default function DiagramsPage() {
         </p>
         <p>
           The truth is I love Effect. I think it&apos;s amazing for building
-          robust applications that behave exactly as you expect. To me,
-          throwing and catching unpredictable errors is the biggest trap in
-          any language that has them. But Effect creates friction for anyone
-          not familiar with it, especially when the code is going to be
-          reviewed. It shines in a team setting
-          where everyone is on board, and a take-home is the opposite of that:
-          the reviewers never opted in. Being understood was the biggest
-          priority, so I stayed in a lane that&apos;s familiar for everyone.
-          It&apos;s the same reason this document and the diagrams below
-          exist, and why I made them as detailed as I could: to reduce that
-          friction as much as possible.
+          robust applications that behave exactly as you expect. To me, throwing
+          and catching unpredictable errors is the biggest trap in any language
+          that has them. But Effect creates friction for anyone not familiar
+          with it, especially when the code is going to be reviewed. It shines
+          in a team setting where everyone is on board, and a take-home is the
+          opposite of that: the reviewers never opted in. Being understood was
+          the biggest priority, so I stayed in a lane that&apos;s familiar for
+          everyone. It&apos;s the same reason this document and the diagrams
+          below exist, and why I made them as detailed as I could: to reduce
+          that friction as much as possible.
         </p>
       </section>
 
       <section id="openspec" className="copy mt-14 scroll-mt-20">
         <H2 id="openspec" title="Spec-driven, with AI" />
         <p>
-          OpenSpec is my favorite AI skill, and this project was built with
-          it: plan and visualize an entire feature before writing the code, or
-          before asking AI to write it. It&apos;s a game changer for me. I
-          like Kiro too, but Kiro is an entire IDE, and OpenSpec sets up in
-          your existing workflow no matter what you use.
+          OpenSpec is my favorite AI skill, and this project was built with it:
+          plan and visualize an entire feature before writing the code, or
+          before asking AI to write it. It&apos;s a game changer for me. I like
+          Kiro too, but Kiro is an entire IDE, and OpenSpec sets up in your
+          existing workflow no matter what you use.
         </p>
         <p>
           Just as valuable: the spec history lives in the repo (see{" "}
@@ -710,12 +709,12 @@ export default function DiagramsPage() {
         </h3>
         <p>
           I&apos;d replace the cron with real background-job infrastructure:
-          something like Temporal, or even a simple queue like BullMQ. The
-          cron is okay, but there are better ways to manage background work.
-          Temporal in particular would make it much easier to avoid race
-          conditions, queue the work that isn&apos;t user-facing, and throttle
-          things. I think a more mature project would go in that direction
-          instead of a cron job.
+          something like Temporal, or even a simple queue like BullMQ. The cron
+          is okay, but there are better ways to manage background work. Temporal
+          in particular would make it much easier to avoid race conditions,
+          queue the work that isn&apos;t user-facing, and throttle things. I
+          think a more mature project would go in that direction instead of a
+          cron job.
         </p>
         <h3 className="mt-8 font-semibold text-foreground">
           What I&apos;m proud of

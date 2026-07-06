@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Inkwell
 
-## Getting Started
+A domain ownership checker: claim a domain, prove you own it through a real
+DKIM TXT record, and keep it verified over time. Built as a take-home for
+Resend's Product Engineer role.
 
-First, run the development server:
+The full write-up lives in the app itself: **`/docs/postmortem`** has the
+documentation, the post-mortem (why I chose what I chose, what I'd do
+differently), and interactive state diagrams for every flow.
+
+## What it does
+
+- Claim a domain and get a generated DKIM key pair with copy-paste DNS
+  instructions, including detected-provider guides and deep links
+- Verify ownership by resolving the real TXT record and comparing keys
+- Keep monitoring verified domains: a disappearing record starts a 24h grace
+  period with a warning email instead of instant revocation
+- Handle ownership transfers: taking over an already-verified domain requires
+  an explicit confirmation, rotates keys so the old record can never validate
+  again, and notifies the previous owner
+- Email notifications (verification results, grace period, supersede) sent
+  through Resend
+- Public-style REST API with an OpenAPI reference at `/api/reference`
+
+## Stack
+
+Next.js + React, Hono + zod-openapi for the API, Drizzle + Postgres, Auth.js
+with Resend magic links, TanStack Query, Tailwind, Biome, Vitest. Deployed on
+Vercel with a cron sweep for background checks.
+
+## Running locally
+
+Prerequisites: Node 20+, pnpm, Docker.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+docker compose up -d        # Postgres on :5432
+cp .env.example .env        # then fill in the values below
+pnpm db:migrate
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+In a second terminal, run the local stand-in for the Vercel cron (hits
+`/api/cron/verify` once a minute):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm cron:dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Environment variables
 
-## Learn More
+Required:
 
-To learn more about Next.js, take a look at the following resources:
+| Variable          | What it is                                          |
+| ----------------- | --------------------------------------------------- |
+| `DATABASE_URL`    | `postgres://postgres:postgres@localhost:5432/resend` for the compose setup |
+| `AUTH_SECRET`     | Auth.js session secret (`openssl rand -base64 32`)  |
+| `AUTH_RESEND_KEY` | Resend API key, used for magic links and notifications |
+| `ENCRYPTION_KEY`  | 32-byte hex (`openssl rand -hex 32`), encrypts DKIM private keys at rest |
+| `CRON_SECRET`     | Bearer token the cron endpoint requires             |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Optional:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable                  | Default | What it tunes                        |
+| ------------------------- | ------- | ------------------------------------ |
+| `PENDING_RECHECK_MS`      | 1m      | Recheck interval while in progress   |
+| `SUCCESS_RECHECK_MS`      | 24h     | Recheck interval once verified       |
+| `GRACE_PERIOD_MS`         | 24h     | Grace period before revocation       |
+| `GRACE_PERIOD_WARNING_MS` | 1h      | When the grace period warning sends  |
+| `VERIFICATION_WINDOW_MS`  | 48h     | How long a verification attempt lives |
+| `NOTIFICATIONS_FROM`      |         | From address for notification emails |
+| `ENABLE_MOCK`             | off     | Enables the mock DNS console at `/mocks`. Never set in production |
 
-## Deploy on Vercel
+### Mock DNS console
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Real DNS propagation is slow, so with `ENABLE_MOCK=true` the app serves a
+console at `/mocks` where mock domains can be pointed at any DNS answer:
+a correct record, a wrong key, `ENODATA`, `ENOTFOUND`, or any other error
+code. This is how every state transition can be exercised without owning a
+pile of domains.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Tests
+
+```bash
+pnpm test
+```
+
+The verification state machine (`src/domain/verification.ts`) is a pure
+function with tests around every transition, plus tests for DKIM checking,
+notifications, and the DB helpers.
+
+## Project layout
+
+```
+src/
+  app/            Next.js routes (UI, API mount, docs)
+  components/     Shared UI
+  db/             Drizzle schema and queries
+  domain/         The core: verification state machine, DKIM, DNS, notifications
+  lib/api/        Hono routes (domains, cron) and OpenAPI setup
+  shared/         Types and schemas safe for client and server
+openspec/         Spec-first change history (proposals, specs, archived changes)
+drizzle/          Generated migrations
+```
+
+The `openspec/` folder is part of the story: features were planned as specs
+before implementation, and the archived changes document what was built and
+why.
