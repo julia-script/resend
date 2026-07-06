@@ -6,19 +6,12 @@ import { and, eq } from "drizzle-orm";
 import type {
   Adapter,
   AdapterAccount,
-  AdapterAuthenticator,
   AdapterSession,
   AdapterUser,
   VerificationToken,
 } from "next-auth/adapters";
 import { db } from "@/db/client";
-import {
-  accounts,
-  authenticators,
-  sessions,
-  users,
-  verificationTokens,
-} from "@/db/schema";
+import { accounts, sessions, users, verificationTokens } from "@/db/schema";
 
 type Awaitable<T> = T | PromiseLike<T>;
 export const DrizzleAdapter: Adapter = {
@@ -174,38 +167,5 @@ export const DrizzleAdapter: Adapter = {
         ),
       )
       .then((res) => res[0] ?? null) as Promise<AdapterAccount | null>;
-  },
-  async createAuthenticator(data: AdapterAuthenticator) {
-    return db
-      .insert(authenticators)
-      .values(data)
-      .returning()
-      .then((res) => res[0] ?? null) as Awaitable<AdapterAuthenticator>;
-  },
-  async getAuthenticator(credentialID: string) {
-    return db
-      .select()
-      .from(authenticators)
-      .where(eq(authenticators.credentialID, credentialID))
-      .then((res) => res[0] ?? null) as Awaitable<AdapterAuthenticator | null>;
-  },
-  async listAuthenticatorsByUserId(userId: string) {
-    return db
-      .select()
-      .from(authenticators)
-      .where(eq(authenticators.userId, userId))
-      .then((res) => res) as Awaitable<AdapterAuthenticator[]>;
-  },
-  async updateAuthenticatorCounter(credentialID: string, newCounter: number) {
-    const authenticator = await db
-      .update(authenticators)
-      .set({ counter: newCounter })
-      .where(eq(authenticators.credentialID, credentialID))
-      .returning()
-      .then((res) => res[0]);
-
-    if (!authenticator) throw new Error("Authenticator not found.");
-
-    return authenticator as Awaitable<AdapterAuthenticator>;
   },
 };

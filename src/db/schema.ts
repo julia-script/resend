@@ -1,5 +1,4 @@
 import {
-  boolean,
   index,
   integer,
   jsonb,
@@ -37,7 +36,8 @@ export const accounts = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     type: text("type").$type<AdapterAccountType>().notNull(),
     provider: text("provider").notNull(),
-    providerAccountId: uuid("providerAccountId").notNull(),
+    // Provider-issued id: an arbitrary string (OAuth ids are not UUIDs).
+    providerAccountId: text("providerAccountId").notNull(),
     refresh_token: text("refresh_token"),
     access_token: text("access_token"),
     expires_at: integer("expires_at"),
@@ -47,11 +47,7 @@ export const accounts = pgTable(
     session_state: text("session_state"),
   },
   (account) => [
-    {
-      compoundKey: primaryKey({
-        columns: [account.provider, account.providerAccountId],
-      }),
-    },
+    primaryKey({ columns: [account.provider, account.providerAccountId] }),
   ],
 );
 
@@ -71,11 +67,9 @@ export const verificationTokens = pgTable(
     expires: timestamp("expires", { mode: "date" }).notNull(),
   },
   (verificationToken) => [
-    {
-      compositePk: primaryKey({
-        columns: [verificationToken.identifier, verificationToken.token],
-      }),
-    },
+    primaryKey({
+      columns: [verificationToken.identifier, verificationToken.token],
+    }),
   ],
 );
 
@@ -109,7 +103,6 @@ export const domains = pgTable(
 
     status: domainStatus("status").notNull().default("not_started"),
     statusReason: domainStatusReason("status_reason"),
-    // One jsonb holding the whole array (not jsonb[]): we always read/write it whole.
     checkLog: jsonb("check_log").$type<CheckLogEntry[]>().notNull().default([]),
 
     nextCheckAt: timestamp("next_check_at", { mode: "date" }),
@@ -128,28 +121,5 @@ export const domains = pgTable(
   (domain) => [
     unique().on(domain.userId, domain.name),
     index("domain_due_checks_idx").on(domain.status, domain.nextCheckAt),
-  ],
-);
-
-export const authenticators = pgTable(
-  "authenticator",
-  {
-    credentialID: uuid("credentialID").notNull().unique(),
-    userId: uuid("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    providerAccountId: uuid("providerAccountId").notNull(),
-    credentialPublicKey: text("credentialPublicKey").notNull(),
-    counter: integer("counter").notNull(),
-    credentialDeviceType: text("credentialDeviceType").notNull(),
-    credentialBackedUp: boolean("credentialBackedUp").notNull(),
-    transports: text("transports"),
-  },
-  (authenticator) => [
-    {
-      compositePK: primaryKey({
-        columns: [authenticator.userId, authenticator.credentialID],
-      }),
-    },
   ],
 );

@@ -1,6 +1,10 @@
 import { defineConfig } from "drizzle-kit";
 
-process.loadEnvFile(); // .env — the CLI runs outside Next's env loading
+try {
+  process.loadEnvFile(); // .env — the CLI runs outside Next's env loading
+} catch {
+  // No .env file (e.g. Vercel build) — vars come from the environment itself.
+}
 
 // Runs outside Next (drizzle-kit CLI), so it can't import server-only modules
 // like @/lib/env — read the raw variable instead.

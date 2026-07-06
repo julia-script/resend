@@ -4,26 +4,15 @@ CREATE TABLE "account" (
 	"userId" uuid NOT NULL,
 	"type" text NOT NULL,
 	"provider" text NOT NULL,
-	"providerAccountId" uuid NOT NULL,
+	"providerAccountId" text NOT NULL,
 	"refresh_token" text,
 	"access_token" text,
 	"expires_at" integer,
 	"token_type" text,
 	"scope" text,
 	"id_token" text,
-	"session_state" text
-);
---> statement-breakpoint
-CREATE TABLE "authenticator" (
-	"credentialID" uuid NOT NULL,
-	"userId" uuid NOT NULL,
-	"providerAccountId" uuid NOT NULL,
-	"credentialPublicKey" text NOT NULL,
-	"counter" integer NOT NULL,
-	"credentialDeviceType" text NOT NULL,
-	"credentialBackedUp" boolean NOT NULL,
-	"transports" text,
-	CONSTRAINT "authenticator_credentialID_unique" UNIQUE("credentialID")
+	"session_state" text,
+	CONSTRAINT "account_provider_providerAccountId_pk" PRIMARY KEY("provider","providerAccountId")
 );
 --> statement-breakpoint
 CREATE TABLE "domain" (
@@ -65,11 +54,11 @@ CREATE TABLE "user" (
 CREATE TABLE "verificationToken" (
 	"identifier" text NOT NULL,
 	"token" text NOT NULL,
-	"expires" timestamp NOT NULL
+	"expires" timestamp NOT NULL,
+	CONSTRAINT "verificationToken_identifier_token_pk" PRIMARY KEY("identifier","token")
 );
 --> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "authenticator" ADD CONSTRAINT "authenticator_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "domain" ADD CONSTRAINT "domain_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "domain_due_checks_idx" ON "domain" USING btree ("status","next_check_at");

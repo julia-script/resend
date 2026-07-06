@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "cron:dev": "node --env-file=.env scripts/cron-dev.mjs",
-    "build": "next build",
+    "build": "pnpm db:migrate && next build",
     "start": "next start",
     "lint": "biome check",
     "lint:fix": "pnpm biome check --write --unsafe",
