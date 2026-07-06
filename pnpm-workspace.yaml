@@ -1,6 +1,8 @@
-ignoredBuiltDependencies:
-  - esbuild
-  - sharp
-  - unrs-resolver
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+
 patchedDependencies:
   '@mermaid-js/layout-elk': patches/@mermaid-js__layout-elk.patch

@@ -2,7 +2,7 @@
   "name": "inkwell",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.5.1",
+  "packageManager": "pnpm@11.10.0",
   "scripts": {
     "dev": "next dev",
     "cron:dev": "node --env-file=.env scripts/cron-dev.mjs",
