@@ -63,3 +63,33 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+/* Mermaid diagram links: fill/stroke are inlined with !important, so hover via filter. */
+.diagram svg a g.node rect {
+  transition: filter 0.15s ease;
+}
+.diagram svg a:hover g.node rect {
+  filter: brightness(0.93) saturate(1.4);
+}
+.diagram svg a:hover .nodeLabel {
+  text-decoration: underline;
+}
+
+/* Center narrow diagrams in the article column. */
+.diagram svg {
+  display: block;
+  margin-inline: auto;
+}
+
+/* Blog-post typography for prose sections of the docs article. */
+.post .copy p {
+  margin-top: 0.875rem;
+  line-height: 1.75;
+}
+.post .copy code {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.875em;
+  background: var(--border);
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.375rem;
+}

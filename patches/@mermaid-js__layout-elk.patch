@@ -1,0 +1,26 @@
+diff --git a/dist/chunks/mermaid-layout-elk.core/render-M6WAID4X.mjs b/dist/chunks/mermaid-layout-elk.core/render-M6WAID4X.mjs
+index 5bbcc79dabb7e7d41df05f4d5fa5b2304648b21a..b043ede7d5a0801063bd440a4c2017fbd73af02b 100644
+--- a/dist/chunks/mermaid-layout-elk.core/render-M6WAID4X.mjs
++++ b/dist/chunks/mermaid-layout-elk.core/render-M6WAID4X.mjs
+@@ -110,7 +110,7 @@ var render = /* @__PURE__ */ __name(async (data4Layout, svg, {
+           if (node.isGroup) {
+             log.debug("id abc88 subgraph = ", node.id, node.x, node.y, node.labelData);
+             const subgraphEl = subgraphsEl.insert("g").attr("class", "subgraph");
+-            const clusterNode = JSON.parse(JSON.stringify(node));
++            const clusterNode = { ...node };
+             clusterNode.x = node.offset.posX + node.width / 2;
+             clusterNode.y = node.offset.posY + node.height / 2;
+             clusterNode.width = Math.max(clusterNode.width, node.labelData.width);
+diff --git a/dist/chunks/mermaid-layout-elk.esm/render-P27B6YR6.mjs b/dist/chunks/mermaid-layout-elk.esm/render-P27B6YR6.mjs
+index 138c28e92d2f43b61ef6424ba34defacb05c406d..1d592aeadc2b6db0403cfec20dcee65d32c3417f 100644
+--- a/dist/chunks/mermaid-layout-elk.esm/render-P27B6YR6.mjs
++++ b/dist/chunks/mermaid-layout-elk.esm/render-P27B6YR6.mjs
+@@ -101356,7 +101356,7 @@ var render = /* @__PURE__ */ __name(async (data4Layout, svg, {
+           if (node.isGroup) {
+             log.debug("id abc88 subgraph = ", node.id, node.x, node.y, node.labelData);
+             const subgraphEl = subgraphsEl.insert("g").attr("class", "subgraph");
+-            const clusterNode = JSON.parse(JSON.stringify(node));
++            const clusterNode = { ...node };
+             clusterNode.x = node.offset.posX + node.width / 2;
+             clusterNode.y = node.offset.posY + node.height / 2;
+             clusterNode.width = Math.max(clusterNode.width, node.labelData.width);
