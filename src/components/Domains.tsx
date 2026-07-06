@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -92,7 +93,7 @@ export const Domains = () => {
   const domains = data?.data;
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-5 shadow-soft sm:col-span-2">
+    <div className="rounded-xl border border-border bg-surface p-5 shadow-soft">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">{strings.domainList.title}</h2>
         {domains && (
@@ -118,7 +119,18 @@ export const Domains = () => {
           </p>
         )}
         {domains?.length === 0 && (
-          <p className="text-sm text-muted">{strings.domainList.empty}</p>
+          <div className="flex flex-col items-center py-6 text-center">
+            <Image
+              src="/empty-list.png"
+              alt=""
+              width={861}
+              height={776}
+              className="w-64"
+            />
+            <p className="mt-4 text-sm text-muted">
+              {strings.domainList.empty}
+            </p>
+          </div>
         )}
         {domains && domains.length > 0 && (
           <ul className="divide-y divide-border">

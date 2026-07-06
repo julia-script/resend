@@ -71,6 +71,17 @@ export const strings = {
       "Your DNS record has stopped resolving. The domain stays verified during a grace period — restore the record below before it runs out to keep sending.",
   },
 
+  // The illustrated 3-step story shown before verification starts.
+  setupSteps: [
+    { title: "Copy your DNS record" },
+    { title: "Add it at your DNS provider" },
+    {
+      title: "Relax — we'll take it from here",
+      subtitle:
+        "DNS changes can take a while to propagate. We’ll email you as soon as your domain is verified.",
+    },
+  ] as ReadonlyArray<{ title: string; subtitle?: string }>,
+
   domainPage: {
     back: "← Domains",
     notFound: "Domain not found, or you don’t have access to it.",

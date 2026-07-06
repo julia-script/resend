@@ -15,7 +15,7 @@ export async function UserMenu() {
         <span className="flex size-7 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">
           {initial}
         </span>
-        <span className="text-sm text-muted">{name}</span>
+        <span className="hidden text-sm text-muted sm:inline">{name}</span>
       </div>
       <SignOutButton />
     </div>

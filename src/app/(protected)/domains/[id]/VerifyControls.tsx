@@ -29,7 +29,7 @@ export const VerifyControls = ({
   if (domain.status === "verified" && !isInGrace(domain)) return null;
 
   return (
-    <div className="mt-5 border-t border-border pt-4">
+    <div className="shrink-0 text-right">
       <button
         type="button"
         onClick={() => verify.mutate()}

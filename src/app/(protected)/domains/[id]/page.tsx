@@ -8,6 +8,7 @@ import { dkimRecordName, dkimRecordValue } from "@/shared/domain";
 import { DnsGuide } from "./DnsGuide";
 import { Field } from "./Field";
 import { RemoveButton } from "./RemoveButton";
+import { SetupSteps } from "./SetupSteps";
 import { StatusHeader } from "./StatusHeader";
 import { VerifyControls } from "./VerifyControls";
 
@@ -36,12 +37,17 @@ export default async function DomainPage({
       <StatusHeader id={domain.id} initialData={domain} />
 
       <div className="mt-8 rounded-xl border border-border bg-surface p-5 shadow-soft">
-        <h2 className="text-sm font-semibold">
-          {strings.domainPage.dnsCardTitle}
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          {strings.domainPage.dnsCardIntro}
-        </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold">
+              {strings.domainPage.dnsCardTitle}
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              {strings.domainPage.dnsCardIntro}
+            </p>
+          </div>
+          <VerifyControls id={domain.id} initialData={domain} />
+        </div>
         <div className="mt-4 grid gap-4">
           <Field
             label={strings.domainPage.nameLabel}
@@ -52,8 +58,8 @@ export default async function DomainPage({
             value={dkimRecordValue(domain)}
           />
         </div>
+        <SetupSteps id={domain.id} initialData={domain} />
         <DnsGuide provider={provider} />
-        <VerifyControls id={domain.id} initialData={domain} />
       </div>
 
       <div className="mt-8">
