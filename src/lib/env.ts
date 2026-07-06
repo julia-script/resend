@@ -19,7 +19,7 @@ const EnvSchema = z.object({
   gracePeriodMs: ms.default(DAY_IN_MS),
   gracePeriodWarningMs: ms.default(60 * MINUTE_IN_MS),
   verificationWindowMs: ms.default(2 * DAY_IN_MS),
-  notificationsFrom: z.string().default("Resend <notifications@jlort.com>"),
+  notificationsFrom: z.string().default("Inkwell <notifications@jlort.com>"),
 
   // Test-only DNS mocking (see src/domain/dns.ts). Never set in production.
   enableMock: z

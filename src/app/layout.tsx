@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "resend",
-  description: "Send email at scale",
+  title: "inkwell",
+  description: "Verify your domains and send email at scale",
 };
 
 export default function RootLayout({

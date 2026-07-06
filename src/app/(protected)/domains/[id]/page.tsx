@@ -5,7 +5,7 @@ import { detectDnsProvider } from "@/domain/detectprovider";
 import { auth } from "@/lib/auth/handlers";
 import { strings } from "@/lib/strings";
 import { dkimRecordName, dkimRecordValue } from "@/shared/domain";
-import { DnsGuide } from "./DnsGuide";
+import { DnsGuide, ProviderHint } from "./DnsGuide";
 import { Field } from "./Field";
 import { RemoveButton } from "./RemoveButton";
 import { SetupSteps } from "./SetupSteps";
@@ -58,6 +58,7 @@ export default async function DomainPage({
             value={dkimRecordValue(domain)}
           />
         </div>
+        <ProviderHint provider={provider} />
         <SetupSteps id={domain.id} initialData={domain} />
         <DnsGuide provider={provider} />
       </div>
