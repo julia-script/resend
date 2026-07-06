@@ -6,8 +6,8 @@
   --foreground: #37352f;
   --muted: #787066;
   --border: #eceae6;
-  --accent: #d6d0f5; /* lavender */
-  --accent-foreground: #47408c;
+  --accent: #d3e5f5; /* powder blue */
+  --accent-foreground: #2e5f8a;
   --mint: #d4ecdd;
   --mint-foreground: #2f6b48;
   --peach: #fbe3d4;
@@ -30,10 +30,34 @@
   --font-mono: var(--font-geist-mono);
   --shadow-soft:
     0 1px 2px rgb(55 53 47 / 0.04), 0 4px 16px rgb(55 53 47 / 0.06);
+  --shadow-lift:
+    0 2px 4px rgb(55 53 47 / 0.06), 0 12px 32px rgb(55 53 47 / 0.1);
+  --animate-progress: progress 1.6s ease-in-out infinite;
+
+  @keyframes progress {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(400%);
+    }
+  }
 }
 
 body {
-  background: var(--background);
+  /* Soft lavender/mint washes in the corners — depth without noise. */
+  background:
+    radial-gradient(
+      60rem 40rem at 85% -10%,
+      rgb(211 229 245 / 0.4),
+      transparent 60%
+    ),
+    radial-gradient(
+      50rem 35rem at -10% 40%,
+      rgb(212 236 221 / 0.35),
+      transparent 55%
+    ), var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }

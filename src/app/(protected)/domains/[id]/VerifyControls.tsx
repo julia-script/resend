@@ -34,7 +34,7 @@ export const VerifyControls = ({
         type="button"
         onClick={() => verify.mutate()}
         disabled={verify.isPending}
-        className="rounded-md bg-mint px-3 py-1.5 text-sm font-medium text-mint-foreground transition-opacity hover:opacity-80 disabled:opacity-50"
+        className="rounded-md bg-mint px-3 py-1.5 text-sm font-medium text-mint-foreground shadow-soft transition hover:opacity-80 active:scale-95 disabled:opacity-50"
       >
         {verify.isPending
           ? strings.verifyButtonPending

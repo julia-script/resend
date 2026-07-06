@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Suspense } from "react";
 import { getDomainById } from "@/db/domains";
 import { detectDnsProvider } from "@/domain/detectprovider";
 import { auth } from "@/lib/auth/handlers";
@@ -12,30 +11,11 @@ import { RemoveButton } from "./RemoveButton";
 import { StatusHeader } from "./StatusHeader";
 import { VerifyControls } from "./VerifyControls";
 
-export default function DomainPage({
+export default async function DomainPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-12">
-      <Link href="/" className="text-sm text-muted hover:text-foreground">
-        {strings.domainPage.back}
-      </Link>
-      <Suspense
-        fallback={
-          <p className="mt-8 text-sm text-muted">
-            {strings.domainPage.loading}
-          </p>
-        }
-      >
-        <DomainContent params={params} />
-      </Suspense>
-    </main>
-  );
-}
-
-async function DomainContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
   if (!session) redirect("/signin");
@@ -48,7 +28,11 @@ async function DomainContent({ params }: { params: Promise<{ id: string }> }) {
     detected.confidence === "low" ? undefined : detected.provider;
 
   return (
-    <>
+    <main className="mx-auto w-full max-w-3xl px-6 py-12">
+      <Link href="/" className="text-sm text-muted hover:text-foreground">
+        {strings.domainPage.back}
+      </Link>
+
       <StatusHeader id={domain.id} initialData={domain} />
 
       <div className="mt-8 rounded-xl border border-border bg-surface p-5 shadow-soft">
@@ -75,6 +59,6 @@ async function DomainContent({ params }: { params: Promise<{ id: string }> }) {
       <div className="mt-8">
         <RemoveButton id={domain.id} name={domain.name} />
       </div>
-    </>
+    </main>
   );
 }

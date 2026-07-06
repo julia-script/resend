@@ -57,15 +57,22 @@ export const strings = {
   },
 
   banner: {
-    inProgress:
-      "We’re checking your DNS about once a minute. This page updates itself — no refreshing needed.",
+    inProgressTitle: "Verification in progress — nothing else for you to do",
+    inProgressBody:
+      "DNS changes take a while to propagate — usually a few minutes, sometimes an hour or more. A wait here is completely normal. We check your DNS about once a minute and this page updates itself, or just close it and we’ll email you once it’s verified.",
+    // "ago" comes from timeAgo(), which can return the phrase "just now" —
+    // "Last checked just now" reads oddly, so that case drops the "Last".
+    inProgressLastCheck: (ago: string) =>
+      ago === "just now" ? "Checked just now." : `Last checked ${ago}.`,
+    inProgressFirstCheck: "First check is coming up in under a minute.",
+    inProgressDeadline: (until: string) =>
+      `We’ll keep checking until ${until}.`,
     gracePeriod:
       "Your DNS record has stopped resolving. The domain stays verified during a grace period — restore the record below before it runs out to keep sending.",
   },
 
   domainPage: {
     back: "← Domains",
-    loading: "Loading domain…",
     notFound: "Domain not found, or you don’t have access to it.",
     dnsCardTitle: "DNS record",
     dnsCardIntro:
@@ -189,7 +196,6 @@ export const strings = {
     placeholder: "example.com",
     add: "Add domain",
     adding: "Adding…",
-    loading: "Loading domains…",
     loadError: "Couldn’t load domains. Try refreshing.",
     empty: "No domains yet. Add one above to start sending.",
     genericError: "Something went wrong.",

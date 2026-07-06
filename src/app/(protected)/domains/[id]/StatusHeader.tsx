@@ -66,8 +66,36 @@ export const StatusHeader = ({
         </div>
       )}
       {domain.status === "in_progress" && (
-        <div className="mt-4 rounded-md bg-accent px-4 py-3 text-sm text-accent-foreground">
-          {strings.banner.inProgress}
+        <div className="mt-4 overflow-hidden rounded-xl border border-accent-foreground/15 bg-accent/50">
+          <div className="h-1 w-full overflow-hidden bg-accent">
+            <div className="h-full w-1/4 animate-progress rounded-full bg-accent-foreground/50" />
+          </div>
+          <div className="flex gap-3 px-4 py-3.5">
+            <span className="relative mt-1 flex h-2.5 w-2.5 shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-foreground opacity-50" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent-foreground" />
+            </span>
+            <div className="text-sm text-accent-foreground">
+              <p className="font-medium">{strings.banner.inProgressTitle}</p>
+              <p className="mt-1.5">{strings.banner.inProgressBody}</p>
+              <p className="mt-1.5 text-accent-foreground/70">
+                {lastCheck
+                  ? strings.banner.inProgressLastCheck(
+                      timeAgo(lastCheck.checkedAt),
+                    )
+                  : strings.banner.inProgressFirstCheck}
+                {domain.deadlineAt &&
+                  ` ${strings.banner.inProgressDeadline(
+                    domain.deadlineAt.toLocaleString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    }),
+                  )}`}
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </>

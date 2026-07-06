@@ -10,6 +10,7 @@ import {
   useDomains,
 } from "@/hooks/domains";
 import { strings } from "@/lib/strings";
+import { Skeleton } from "./Skeleton";
 import { StatusBadge } from "./StatusBadge";
 
 const CreateDomain = () => {
@@ -42,12 +43,12 @@ const CreateDomain = () => {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={strings.domainList.placeholder}
-          className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none placeholder:text-muted/60 focus:border-accent-foreground/40"
+          className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none transition-shadow placeholder:text-muted/60 focus:border-accent-foreground/40 focus:ring-2 focus:ring-accent"
         />
         <button
           type="submit"
           disabled={mutation.isPending || !name.trim()}
-          className="shrink-0 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-80 disabled:opacity-50"
+          className="shrink-0 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground shadow-soft transition hover:opacity-80 active:scale-95 disabled:opacity-50"
         >
           {mutation.isPending
             ? strings.domainList.adding
@@ -105,7 +106,11 @@ export const Domains = () => {
       </div>
       <div className="mt-4">
         {isPending && (
-          <p className="text-sm text-muted">{strings.domainList.loading}</p>
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
         )}
         {error && (
           <p className="text-sm text-peach-foreground">
