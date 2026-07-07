@@ -14,6 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Vercel's derived production URL points at a stale project domain, which
+  // breaks og:image URLs. Pin the base to the domain that actually serves.
+  metadataBase: new URL("https://inkwell-resend.vercel.app"),
   title: "inkwell",
   description: "Verify your domains and send email at scale",
 };
