@@ -21,24 +21,52 @@ const EnvSchema = z.object({
   verificationWindowMs: ms.default(2 * DAY_IN_MS),
   notificationsFrom: z.string().default("Inkwell <notifications@jlort.com>"),
 
-  // Test-only DNS mocking (see src/domain/dns.ts). Never set in production.
+  // Test-only DNS mocking (see src/domain/dns.ts). Hard-blocked in
+  // production below — the env var alone can't enable it there.
   enableMock: z
     .string()
     .optional()
-    .transform((v) => v === "true" || v === "1"),
+    .transform(
+      (v) =>
+        (v === "true" || v === "1") && process.env.NODE_ENV !== "production",
+    ),
 });
+// Under vitest (NODE_ENV=test) the schema gets deterministic inputs: secret
+// placeholders so a fresh clone with no .env runs green, and timing
+// overrides stripped so demo-short values in .env never change what tests
+// assert. A real DATABASE_URL is kept — the DB integration suite gates on
+// its presence in process.env.
+const source: NodeJS.ProcessEnv =
+  process.env.NODE_ENV === "test"
+    ? {
+        ...process.env,
+        AUTH_SECRET: "test-auth-secret",
+        AUTH_RESEND_KEY: "re_test_placeholder",
+        DATABASE_URL:
+          process.env.DATABASE_URL ?? "postgres://placeholder:5432/placeholder",
+        // 32 bytes of hex: the DB integration tests encrypt for real.
+        ENCRYPTION_KEY: "0f".repeat(32),
+        CRON_SECRET: "test-cron-secret",
+        PENDING_RECHECK_MS: undefined,
+        SUCCESS_RECHECK_MS: undefined,
+        GRACE_PERIOD_MS: undefined,
+        GRACE_PERIOD_WARNING_MS: undefined,
+        VERIFICATION_WINDOW_MS: undefined,
+      }
+    : process.env;
+
 export const env = EnvSchema.parse({
-  authSecret: process.env.AUTH_SECRET,
-  authResendKey: process.env.AUTH_RESEND_KEY,
-  databaseUrl: process.env.DATABASE_URL,
-  encryptionKey: process.env.ENCRYPTION_KEY,
-  cronSecret: process.env.CRON_SECRET,
-  nodeEnv: process.env.NODE_ENV,
-  pendingRecheckMs: process.env.PENDING_RECHECK_MS,
-  successRecheckMs: process.env.SUCCESS_RECHECK_MS,
-  gracePeriodMs: process.env.GRACE_PERIOD_MS,
-  gracePeriodWarningMs: process.env.GRACE_PERIOD_WARNING_MS,
-  verificationWindowMs: process.env.VERIFICATION_WINDOW_MS,
-  notificationsFrom: process.env.NOTIFICATIONS_FROM,
-  enableMock: process.env.ENABLE_MOCK,
+  authSecret: source.AUTH_SECRET,
+  authResendKey: source.AUTH_RESEND_KEY,
+  databaseUrl: source.DATABASE_URL,
+  encryptionKey: source.ENCRYPTION_KEY,
+  cronSecret: source.CRON_SECRET,
+  nodeEnv: source.NODE_ENV,
+  pendingRecheckMs: source.PENDING_RECHECK_MS,
+  successRecheckMs: source.SUCCESS_RECHECK_MS,
+  gracePeriodMs: source.GRACE_PERIOD_MS,
+  gracePeriodWarningMs: source.GRACE_PERIOD_WARNING_MS,
+  verificationWindowMs: source.VERIFICATION_WINDOW_MS,
+  notificationsFrom: source.NOTIFICATIONS_FROM,
+  enableMock: source.ENABLE_MOCK,
 });

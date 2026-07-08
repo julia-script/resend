@@ -2,7 +2,11 @@ import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
-process.loadEnvFile(); // .env — tests exercise env-validated modules
+try {
+  process.loadEnvFile(); // .env — tests exercise env-validated modules
+} catch {
+  // No .env on a fresh clone: src/lib/env.ts supplies test placeholders.
+}
 
 export default defineConfig({
   plugins: [react()],

@@ -10,6 +10,12 @@ import {
 import { generateRsaKeyPair } from "./crypto";
 import { resolveTxt } from "./dns";
 
+// Deliberately 1024, not 2048: a 2048-bit p= overflows the 255-char TXT
+// string limit and must be split, which some DNS providers mishandle — a
+// verification-failure source in exactly this product's core flow — while
+// inbox providers don't reward 2048 and 1024 meets current RFC and bulk-
+// sender requirements. Rationale + revisit conditions: /docs/postmortem and
+// https://resend.com/docs/knowledge-base/do-i-need-2048-dkim
 const DKIM_MODULUS_LENGTH = 1024;
 const SELECTOR_BYTES = 6; // 12 lowercase hex chars, DNS-label-safe
 export const generateDkimKeys = async () => {

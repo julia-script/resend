@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, inArray, lte, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lte, ne, sql } from "drizzle-orm";
 import { encryptPrivateKey } from "@/domain/crypto";
 import { env } from "@/lib/env";
 import { ApiError } from "@/lib/errors";
@@ -212,12 +212,35 @@ export type DomainUpdate = Partial<
     | "gracePeriodWarningSentAt"
   >
 > & { appendCheckLog?: CheckLogEntry[] };
+
+/**
+ * Optimistic-concurrency guard: the fields the caller's transition was
+ * computed from. Exactly the state `transition()` branches on for event
+ * emission — a writer whose guard no longer matches lost the race, affects
+ * zero rows, and must not announce anything.
+ */
+export type DomainGuard = Pick<
+  PartialDomain,
+  "status" | "gracePeriodStartedAt" | "gracePeriodWarningSentAt"
+>;
+const tsGuard = (
+  column:
+    | typeof domains.gracePeriodStartedAt
+    | typeof domains.gracePeriodWarningSentAt,
+  expected: Date | null,
+) => (expected === null ? isNull(column) : eq(column, expected));
+
+/** Transaction handle or the root db — updateDomain runs on either. */
+export type DbExecutor = Pick<typeof db, "update">;
+
 export const updateDomain = async (
   id: string,
   { appendCheckLog, ...updates }: DomainUpdate,
+  options?: { guard?: DomainGuard; executor?: DbExecutor },
 ): Promise<PartialDomain | null> => {
+  const { guard, executor = db } = options ?? {};
   try {
-    const result = await db
+    const result = await executor
       .update(domains)
       .set({
         ...updates,
@@ -225,7 +248,24 @@ export const updateDomain = async (
           ? { checkLog: appendCheckLogSql(appendCheckLog) }
           : {}),
       })
-      .where(eq(domains.id, id))
+      .where(
+        and(
+          eq(domains.id, id),
+          ...(guard
+            ? [
+                eq(domains.status, guard.status),
+                tsGuard(
+                  domains.gracePeriodStartedAt,
+                  guard.gracePeriodStartedAt,
+                ),
+                tsGuard(
+                  domains.gracePeriodWarningSentAt,
+                  guard.gracePeriodWarningSentAt,
+                ),
+              ]
+            : []),
+        ),
+      )
       .returning(partialDomainTable)
       .execute();
     return result[0] || null;
@@ -276,6 +316,14 @@ export const rotateDomainKeys = async (
   }
 };
 
+/** Postgres unique_violation, possibly wrapped by the driver/ORM. */
+const isUniqueViolation = (error: unknown): boolean => {
+  for (let e = error; e; e = (e as { cause?: unknown }).cause) {
+    if ((e as { code?: string }).code === "23505") return true;
+  }
+  return false;
+};
+
 export const insertDomain = async ({
   privateKey,
   ...params
@@ -299,6 +347,15 @@ export const insertDomain = async ({
       .execute();
     return result[0];
   } catch (error) {
+    // Unique (userId, name): a concurrent duplicate create lost the race.
+    // Tagged so the route can re-fetch and stay idempotent instead of 500ing.
+    if (isUniqueViolation(error)) {
+      throw new ApiError({
+        code: "db/domain_exists",
+        message: "Domain already exists for this user",
+        cause: error,
+      });
+    }
     throw new ApiError({
       code: "db/insert_domain_failed",
       message: "Failed to create domain",

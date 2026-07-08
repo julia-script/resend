@@ -6,7 +6,7 @@ import {
   insertDomain,
 } from "@/db/domains";
 import * as Dkim from "@/domain/dkim";
-import { ApiErrorSchema } from "@/lib/errors";
+import { ApiError, ApiErrorSchema } from "@/lib/errors";
 import { CreateDomainInputSchema, DomainResponseSchema } from "@/shared/api";
 import type { Env } from "../setup";
 
@@ -83,13 +83,26 @@ export const createDomainHandler: RouteHandler<
   }
 
   const dkimKeys = await Dkim.generateDkimKeys();
-  const domain = await insertDomain({
-    name: normalizedName,
-    userId: session.user.id,
-    selector: dkimKeys.selector,
-    publicKey: dkimKeys.publicKey,
-    privateKey: dkimKeys.privateKeyPem,
-  });
-
-  return c.json({ data: domain }, 200);
+  try {
+    const domain = await insertDomain({
+      name: normalizedName,
+      userId: session.user.id,
+      selector: dkimKeys.selector,
+      publicKey: dkimKeys.publicKey,
+      privateKey: dkimKeys.privateKeyPem,
+    });
+    return c.json({ data: domain }, 200);
+  } catch (error) {
+    // Concurrent duplicate create: both requests passed the `mine` check
+    // above, the second insert hit unique (userId, name). Same answer as
+    // the sequential duplicate path — the existing row, not a 500.
+    if (error instanceof ApiError && error.isTagged("db/domain_exists")) {
+      const existing = await getDomainByNameAndUserId(
+        normalizedName,
+        session.user.id,
+      );
+      if (existing) return c.json({ data: existing }, 200);
+    }
+    throw error;
+  }
 };

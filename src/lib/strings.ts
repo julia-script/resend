@@ -94,6 +94,7 @@ export const strings = {
     lastChecked: (label: string, ago: string) => `${label} · ${ago}`,
     remove: "Remove domain",
     removing: "Removing…",
+    removeError: "Couldn’t remove the domain. Try again.",
     removeConfirm: (name: string) =>
       `Remove ${name}? This deletes it permanently.`,
   },
@@ -204,6 +205,7 @@ export const strings = {
   domainList: {
     title: "Your domains",
     count: (n: number) => `${n} ${n === 1 ? "domain" : "domains"}`,
+    nameLabel: "Domain name",
     placeholder: "example.com",
     add: "Add domain",
     adding: "Adding…",

@@ -12,15 +12,22 @@ export const RemoveButton = ({ id, name }: { id: string; name: string }) => {
   };
 
   return (
-    <button
-      type="button"
-      onClick={onRemove}
-      disabled={remove.isPending}
-      className="text-sm text-peach-foreground hover:underline disabled:opacity-50"
-    >
-      {remove.isPending
-        ? strings.domainPage.removing
-        : strings.domainPage.remove}
-    </button>
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={remove.isPending}
+        className="text-sm text-peach-foreground hover:underline disabled:opacity-50"
+      >
+        {remove.isPending
+          ? strings.domainPage.removing
+          : strings.domainPage.remove}
+      </button>
+      {remove.isError && (
+        <p role="alert" className="text-sm text-peach-foreground">
+          {strings.domainPage.removeError}
+        </p>
+      )}
+    </div>
   );
 };

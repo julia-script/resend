@@ -89,6 +89,11 @@ The verification state machine (`src/domain/verification.ts`) is a pure
 function with tests around every transition, plus tests for DKIM checking,
 notifications, and the DB helpers.
 
+The suite is hermetic: it runs green on a fresh clone with no `.env` and no
+network (DNS answers are injected through the same mock seam the dev console
+uses). The Postgres integration tests skip themselves unless `DATABASE_URL`
+is set — point it at the docker-compose database to include them.
+
 ## Project layout
 
 ```

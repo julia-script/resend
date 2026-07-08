@@ -1,25 +1,35 @@
 import { expect, test } from "vitest";
+import { dkimRecordValue } from "@/shared/domain";
 import { checkDkim, normalizeDomainName } from "./dkim";
 
-// Live DNS fixtures, same as the pre-refactor test suite: jlort.com publishes
-// this key at resend._domainkey.
-const JLORT_KEY =
-  "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDuu5N8JTRzYBMTuTOD+/OmE9TX4ioO01tI1pOmhne9qordKnQbq8xzY5PugM+yFR+UvsfyjIYG5VJGOKoaMIiiLnQ0udOBeKg+UxjlSMxJ+RNoFuFPxeCK8hMvX/q3e42gt8eXVI7Z1SoNQNGLDRPSI5JQgVP/mLFdmKmMEvqINwIDAQAB";
+// Hermetic DNS: checkDkim's mockRecord seam (the same one the dev mocks
+// console uses) answers instead of live resolvers. The domain must contain
+// "mock" (isMockDomainName) for the injected record to apply.
+const TEST_KEY = "MIGfTESTKEYBASE64";
+const MOCK_DOMAIN = "example.mock";
 
 test("matching key verifies", async () => {
   const result = await checkDkim({
-    selector: "resend",
-    domain: "jlort.com",
-    publicKey: JLORT_KEY,
+    selector: "testsel",
+    domain: MOCK_DOMAIN,
+    publicKey: TEST_KEY,
+    mockRecord: {
+      type: "success",
+      value: [dkimRecordValue({ publicKey: TEST_KEY })],
+    },
   });
   expect(result.type).toBe("success");
 });
 
 test("wrong key fails with key_mismatch", async () => {
   const result = await checkDkim({
-    selector: "resend",
-    domain: "jlort.com",
+    selector: "testsel",
+    domain: MOCK_DOMAIN,
     publicKey: "MIGfNOTTHEKEY",
+    mockRecord: {
+      type: "success",
+      value: [dkimRecordValue({ publicKey: TEST_KEY })],
+    },
   });
   expect(result).toMatchObject({
     type: "failure",
@@ -29,13 +39,27 @@ test("wrong key fails with key_mismatch", async () => {
 
 test("missing record fails with record_not_found", async () => {
   const result = await checkDkim({
-    selector: "definitely-not-a-selector",
-    domain: "jlort.com",
-    publicKey: JLORT_KEY,
+    selector: "testsel",
+    domain: MOCK_DOMAIN,
+    publicKey: TEST_KEY,
+    mockRecord: { type: "failure", error: "ENODATA" },
   });
   expect(result).toMatchObject({
     type: "failure",
     error: { code: "dkim/record_not_found" },
+  });
+});
+
+test("unresolvable domain fails with domain_not_found", async () => {
+  const result = await checkDkim({
+    selector: "testsel",
+    domain: MOCK_DOMAIN,
+    publicKey: TEST_KEY,
+    mockRecord: { type: "failure", error: "ENOTFOUND" },
+  });
+  expect(result).toMatchObject({
+    type: "failure",
+    error: { code: "dkim/domain_not_found" },
   });
 });
 
@@ -65,9 +89,9 @@ test("normalizes unicode with uppercase and trailing dot", () => {
 
 test("invalid domain fails without throwing", async () => {
   const result = await checkDkim({
-    selector: "resend",
+    selector: "testsel",
     domain: "not a domain",
-    publicKey: JLORT_KEY,
+    publicKey: TEST_KEY,
   });
   expect(result).toMatchObject({
     type: "failure",

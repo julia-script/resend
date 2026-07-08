@@ -578,6 +578,26 @@ export default function DiagramsPage() {
           generates a real key pair and checks DNS for the real record.
         </p>
         <p>
+          <strong>Why RSA-1024 DKIM keys.</strong> The keys are deliberately
+          1024-bit, not the 2048 you might expect. A 2048-bit public key
+          doesn&apos;t fit in a single 255-character TXT string, so the record
+          has to be split — and some DNS providers mishandle split records,
+          which would inject verification failures into exactly the flow this
+          product exists to make reliable. Inbox providers don&apos;t reward
+          2048-bit signatures with better placement, and 1024 meets current RFC
+          guidance and the Google/Yahoo/Microsoft bulk-sender requirements (none
+          of which mandate a key length).{" "}
+          <a
+            href="https://resend.com/docs/knowledge-base/do-i-need-2048-dkim"
+            className="underline hover:text-foreground"
+          >
+            Resend&apos;s own guidance
+          </a>{" "}
+          reaches the same conclusion. I&apos;d revisit this the day a major
+          mailbox provider starts requiring 2048: the modulus constant is a
+          one-line change, and key rotation already exists.
+        </p>
+        <p>
           <strong>Domain takeovers.</strong> The hardest state transitions are
           the ownership edge cases. What happens when you buy a domain that a
           previous owner had registered here? Or when you own so many domains

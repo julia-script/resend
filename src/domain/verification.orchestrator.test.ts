@@ -8,6 +8,13 @@ vi.mock("@/db/domains", () => ({
   })),
   getVerifiedDomainsByName: vi.fn(async () => []),
 }));
+// The supersede sweep runs in db.transaction; hand the callback a sentinel
+// so tests can assert the revokes went through the transaction handle.
+vi.mock("@/db/client", () => ({
+  db: {
+    transaction: async (cb: (tx: unknown) => unknown) => cb("TX"),
+  },
+}));
 vi.mock("./dkim", () => ({
   checkDkim: vi.fn(),
 }));
@@ -110,18 +117,22 @@ test("fresh verification revokes another owner's verified copy and queues their 
   const result = await verifyDomain(domain, NOW);
 
   expect(getVerifiedDomainsByName).toHaveBeenCalledWith("example.com", "d1");
-  expect(updateDomain).toHaveBeenCalledWith("d2", {
-    status: "failed",
-    statusReason: "superseded",
-    verifiedAt: null,
-    nextCheckAt: null,
-    deadlineAt: null,
-    gracePeriodStartedAt: null,
-    gracePeriodWarningSentAt: null,
-    appendCheckLog: [
-      { status: "revoked", reason: "superseded", checkedAt: NOW.getTime() },
-    ],
-  });
+  expect(updateDomain).toHaveBeenCalledWith(
+    "d2",
+    {
+      status: "failed",
+      statusReason: "superseded",
+      verifiedAt: null,
+      nextCheckAt: null,
+      deadlineAt: null,
+      gracePeriodStartedAt: null,
+      gracePeriodWarningSentAt: null,
+      appendCheckLog: [
+        { status: "revoked", reason: "superseded", checkedAt: NOW.getTime() },
+      ],
+    },
+    { executor: "TX" },
+  );
   expect(result.notifications).toContainEqual({
     event: "notifyDomainSuperseded",
     domain: previousOwner,
@@ -136,6 +147,24 @@ test("verified→verified recheck does not run the supersede sweep", async () =>
   );
   expect(getVerifiedDomainsByName).not.toHaveBeenCalled();
   expect(result.notifications).toEqual([]);
+});
+
+test("update is guarded by the state the transition was computed from", async () => {
+  vi.mocked(checkDkim).mockResolvedValue({ type: "success", value: "rec" });
+  await verifyDomain(domain, NOW);
+  // A cron tick racing a manual verify: the loser's guard no longer matches,
+  // its UPDATE hits zero rows, and only the winner announces the transition.
+  expect(updateDomain).toHaveBeenCalledWith(
+    "d1",
+    expect.objectContaining({ status: "verified" }),
+    {
+      guard: {
+        status: "in_progress",
+        gracePeriodStartedAt: null,
+        gracePeriodWarningSentAt: null,
+      },
+    },
+  );
 });
 
 test("passes the domain's own selector/name/key to the DKIM check", async () => {

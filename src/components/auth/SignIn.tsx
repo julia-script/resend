@@ -9,7 +9,11 @@ export function SignIn() {
         await signIn("resend", formData);
       }}
     >
+      <label htmlFor="signin-email" className="sr-only">
+        Email address
+      </label>
       <input
+        id="signin-email"
         type="email"
         name="email"
         placeholder="you@example.com"

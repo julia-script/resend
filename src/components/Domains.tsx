@@ -39,7 +39,11 @@ const CreateDomain = () => {
             );
         }}
       >
+        <label htmlFor="domain-name" className="sr-only">
+          {strings.domainList.nameLabel}
+        </label>
         <input
+          id="domain-name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -57,7 +61,10 @@ const CreateDomain = () => {
         </button>
       </form>
       {takenName ? (
-        <div className="mt-2 rounded-md bg-peach px-3 py-2 text-xs text-peach-foreground">
+        <div
+          role="alert"
+          className="mt-2 rounded-md bg-peach px-3 py-2 text-xs text-peach-foreground"
+        >
           <p>
             <strong>{takenName}</strong> {strings.domainList.claimWarning}
           </p>
@@ -79,7 +86,7 @@ const CreateDomain = () => {
         </div>
       ) : (
         mutation.isError && (
-          <p className="mt-2 text-xs text-peach-foreground">
+          <p role="alert" className="mt-2 text-xs text-peach-foreground">
             {apiErrorMessage(mutation.error) ?? strings.domainList.genericError}
           </p>
         )
@@ -114,7 +121,7 @@ export const Domains = () => {
           </div>
         )}
         {error && (
-          <p className="text-sm text-peach-foreground">
+          <p role="alert" className="text-sm text-peach-foreground">
             {strings.domainList.loadError}
           </p>
         )}

@@ -64,14 +64,26 @@ export const verifyDomainHandler: RouteHandler<
   }
 
   if (action !== "check") {
+    // Guarded by the state we read: a double-clicked verify (or one racing
+    // the cron) can't start the same verification twice.
     domain =
-      (await updateDomain(domain.id, {
-        status: "in_progress",
-        statusReason: null,
-        verifiedAt: null,
-        nextCheckAt: now,
-        deadlineAt: new Date(now.getTime() + env.verificationWindowMs),
-      })) ?? domain;
+      (await updateDomain(
+        domain.id,
+        {
+          status: "in_progress",
+          statusReason: null,
+          verifiedAt: null,
+          nextCheckAt: now,
+          deadlineAt: new Date(now.getTime() + env.verificationWindowMs),
+        },
+        {
+          guard: {
+            status: domain.status,
+            gracePeriodStartedAt: domain.gracePeriodStartedAt,
+            gracePeriodWarningSentAt: domain.gracePeriodWarningSentAt,
+          },
+        },
+      )) ?? domain;
   }
 
   // Instant feedback, throttled so the button can't hammer DNS. A rotation

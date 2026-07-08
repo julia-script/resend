@@ -1,4 +1,5 @@
 import "server-only";
+import { db } from "@/db/client";
 import {
   type DomainUpdate,
   getVerifiedDomainsByName,
@@ -218,36 +219,46 @@ export const transition = (
  * for rows whose revoke actually persisted, so nobody is told about a state
  * that isn't in the database.
  */
-// ponytail: not transactional — a revoke that throws mid-sweep can leave
-// another verified copy standing; wrap in db.transaction if it matters.
 const supersedeOthers = async (
   domain: PartialDomain,
   now: Date,
 ): Promise<Notification[]> => {
   const others = await getVerifiedDomainsByName(domain.name, domain.id);
-  const revoked = await Promise.all(
-    others.map(async (other) => {
-      const updated = await updateDomain(other.id, {
-        status: "failed",
-        statusReason: "superseded",
-        verifiedAt: null,
-        nextCheckAt: null,
-        deadlineAt: null,
-        gracePeriodStartedAt: null,
-        gracePeriodWarningSentAt: null,
-        appendCheckLog: [
-          { status: "revoked", reason: "superseded", checkedAt: now.getTime() },
-        ],
-      });
-      return updated ? other : null;
-    }),
-  );
-  return revoked
-    .filter((other): other is PartialDomain => other !== null)
-    .map((other) => ({
-      event: "notifyDomainSuperseded" as const,
-      domain: other,
-    }));
+  if (others.length === 0) return [];
+  // All-or-nothing: a revoke that throws mid-sweep must not leave another
+  // verified copy standing. Notifications are built only after commit, from
+  // rows whose revoke actually persisted.
+  const revoked = await db.transaction(async (tx) => {
+    const persisted: PartialDomain[] = [];
+    for (const other of others) {
+      const updated = await updateDomain(
+        other.id,
+        {
+          status: "failed",
+          statusReason: "superseded",
+          verifiedAt: null,
+          nextCheckAt: null,
+          deadlineAt: null,
+          gracePeriodStartedAt: null,
+          gracePeriodWarningSentAt: null,
+          appendCheckLog: [
+            {
+              status: "revoked",
+              reason: "superseded",
+              checkedAt: now.getTime(),
+            },
+          ],
+        },
+        { executor: tx },
+      );
+      if (updated) persisted.push(other);
+    }
+    return persisted;
+  });
+  return revoked.map((other) => ({
+    event: "notifyDomainSuperseded" as const,
+    domain: other,
+  }));
 };
 
 /**
@@ -268,8 +279,18 @@ export const verifyDomain = async (
   const result = transition(domain, check, now);
   if (!result) return { domain, notifications: [] };
 
-  const updated = await updateDomain(domain.id, result.update);
-  // Nothing persisted (e.g. deleted mid-check): announce nothing.
+  // Guarded by the state the transition was computed from: a concurrent
+  // check (cron tick vs manual verify) that already performed this
+  // transition makes the UPDATE match zero rows, so only one writer ever
+  // announces it.
+  const updated = await updateDomain(domain.id, result.update, {
+    guard: {
+      status: domain.status,
+      gracePeriodStartedAt: domain.gracePeriodStartedAt,
+      gracePeriodWarningSentAt: domain.gracePeriodWarningSentAt,
+    },
+  });
+  // Nothing persisted (deleted mid-check, or lost the race): announce nothing.
   if (!updated) return { domain, notifications: [] };
 
   const notifications: Notification[] = (result.events ?? []).map((event) => ({

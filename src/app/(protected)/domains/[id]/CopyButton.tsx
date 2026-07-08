@@ -14,7 +14,10 @@ export const CopyButton = ({ value }: { value: string }) => {
       }}
       className="shrink-0 rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-foreground transition-opacity hover:opacity-80"
     >
-      {copied ? strings.copy.copied : strings.copy.idle}
+      {/* aria-live so the flip to "Copied" is announced, not just painted. */}
+      <span aria-live="polite">
+        {copied ? strings.copy.copied : strings.copy.idle}
+      </span>
     </button>
   );
 };
