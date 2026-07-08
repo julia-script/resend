@@ -82,7 +82,18 @@ stateDiagram-v2
     generateDkimKeys --> createUnverified
     createUnverified: Create new domain
     returnDomain: Return domain
-    createUnverified --> returnDomain:::goodEvent
+
+    state insertCheck <<choice>>
+    createUnverified --> insertCheck
+    insertCheck --> returnDomain:::goodEvent : [inserted]
+    insertCheck --> returnExisting:::goodEvent : [db/domain_exists]
+
+    returnExisting: ${ml(`
+      Concurrent duplicate:
+      unique (userId, name) violated,
+      return the existing row (200)
+    `)}
+    returnExisting --> [*]
 
     nameTakenErr: Error: Name taken
     nameTakenErr --> [*]
@@ -164,8 +175,8 @@ stateDiagram-v2
     status --> statusCheck
     statusCheck --> startVerification : [notStarted]
     statusCheck --> statusReason : [failed]
-    statusCheck --> check : [inProgress]
-    statusCheck --> check : [verified]
+    statusCheck --> isCheckThrottled : [inProgress]
+    statusCheck --> isCheckThrottled : [verified]
 
     statusReason: domain.statusReason is
     state statusReasonCheck <<choice>>
@@ -175,12 +186,22 @@ stateDiagram-v2
     statusReasonCheck --> restartVerification : [canceled]
     statusReasonCheck --> restartVerification : [gracePeriodExpired]
 
+    startVerification: Start Verification
+    startVerification --> updateDomainInProgress:::update
 
+    restartVerification: Restart Verification
+    restartVerification --> updateDomainInProgress:::update
+
+    updateDomainInProgress: ${ml(`
+      Update
+      domain.status = "inProgress"
+    `)}
+    updateDomainInProgress --> isCheckThrottled
 
     rotateDomain: Rotate Domain Keys
     rotateDomain --> generateDkimKeys
     generateDkimKeys --> updateDomainWithNewKeys:::update
-    updateDomainWithNewKeys --> returnDomain
+    updateDomainWithNewKeys --> isCheckThrottled
 
     updateDomainWithNewKeys: ${ml(`
       Update
@@ -189,30 +210,17 @@ stateDiagram-v2
       domain.privateKey = newPrivateKey
     `)}
 
+    isCheckThrottled: Was the domain checked recently?
+    state isCheckThrottledCheck <<choice>>
+    isCheckThrottled --> isCheckThrottledCheck
+    isCheckThrottledCheck --> verifyDomain:::link : [no]
+    isCheckThrottledCheck --> returnDomain : [yes]
+    click verifyDomain href "#verify_domain"
+
+    verifyDomain --> returnDomain
 
     returnDomain : Return domain
     returnDomain --> [*]
-
-
-
-    check --> isCheckThrottled
-
-    state isCheckThrottledCheck <<choice>>
-    isCheckThrottled --> isCheckThrottledCheck
-    isCheckThrottledCheck --> verifyDomain:::link : [false]
-    isCheckThrottledCheck --> returnDomain: [true]
-
-    click startVerification href "#start_verification"
-
-    restartVerification: Restart Verification
-    restartVerification --> updateDomainInProgress:::update
-    updateDomainInProgress: ${ml(`
-      Update
-      domain.status = "inProgress"
-    `)}
-    updateDomainInProgress --> returnDomain
-
-    verifyDomain --> returnDomain
       `,
   },
   {
@@ -344,7 +352,16 @@ stateDiagram-v2
     `)}
     updateDomainVerified --> notifyVerificationSucceeded:::notification
     notifyVerificationSucceeded: Notify user: Verification Succeeded
-    notifyVerificationSucceeded --> [*]
+    notifyVerificationSucceeded --> supersedeOthers
+
+    supersedeOthers: ${ml(`
+      Supersede other accounts
+      revoke every other verified copy
+      of this name, in one transaction
+    `)}
+    supersedeOthers --> notifyDomainSuperseded:::notification
+    notifyDomainSuperseded: Notify prior owners: Domain Superseded
+    notifyDomainSuperseded --> [*]
 
     deadline: Is the verification deadline past?
     state deadlineCheck <<choice>>
