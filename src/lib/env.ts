@@ -28,7 +28,7 @@ const EnvSchema = z.object({
     .optional()
     .transform(
       (v) =>
-        (v === "true" || v === "1") && process.env.NODE_ENV !== "production",
+        (v === "true" || v === "1")
     ),
 });
 // Under vitest (NODE_ENV=test) the schema gets deterministic inputs: secret
